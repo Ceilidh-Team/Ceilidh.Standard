@@ -1,0 +1,9 @@
+language: csharp
+solution: ceilidh-core.sln
+mono: none
+dotnet: 2.1.302
+install:
+  - dotnet restore
+script:
+  - dotnet build
+  - dotnet test ceilidh-core-tests/ceilidh-core-tests.csproj

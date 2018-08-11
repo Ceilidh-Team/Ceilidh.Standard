@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using Ceilidh.Core.Plugin.Attributes;
 
 [assembly: PluginAssembly]
@@ -9,6 +10,8 @@ using Ceilidh.Core.Plugin.Attributes;
 [assembly: AssemblyProduct("Ceilidh")]
 [assembly: AssemblyDescription("Core module for Ceilidh.")]
 [assembly: AssemblyTitle("Ceilidh Core")]
+
+[assembly: InternalsVisibleTo("ceilidh-core-tests")]
 
 #if DEBUG
 [assembly: AssemblyConfiguration("Debug")]
