@@ -8,7 +8,7 @@ namespace Ceilidh.Core.Util
     ///     Represents a directed graph
     /// </summary>
     /// <typeparam name="TNode">The type of the nodes in this graph</typeparam>
-    internal class DirectedGraph<TNode> where TNode : class
+    internal class DirectedGraph<TNode>
     {
         private readonly HashSet<Edge> _edges = new HashSet<Edge>();
         private readonly HashSet<TNode> _nodes;

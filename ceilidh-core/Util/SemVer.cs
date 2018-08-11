@@ -37,11 +37,11 @@ namespace Ceilidh.Core.Util
                         if (one.Major == two.Major && one.Minor > two.Minor) return false;
                         break;
                     case SemVerMatchFlags.PatchEqual:
-                        if (one.Major != two.Major && one.Minor != two.Minor && one.Revision != two.Revision)
+                        if (one.Major != two.Major && one.Minor != two.Minor && one.Build != two.Build)
                             return false;
                         break;
                     case SemVerMatchFlags.PatchCompatible:
-                        if (one.Major == two.Major && one.Minor == two.Minor && one.Revision > two.Revision)
+                        if (one.Major == two.Major && one.Minor == two.Minor && one.Build > two.Build)
                             return false;
                         break;
                     default:
