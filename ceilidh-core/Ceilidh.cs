@@ -6,7 +6,6 @@ using Ceilidh.Core.Config;
 using Ceilidh.Core.Plugin;
 using Ceilidh.Core.Plugin.Archive;
 using Ceilidh.Core.Vendor.Contracts;
-using Ceilidh.Core.Vendor.Implementations;
 using CommandLine;
 
 namespace Ceilidh.Core
