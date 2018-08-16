@@ -12,8 +12,18 @@ namespace Ceilidh.Core
 {
     internal static class Ceilidh
     {
+        public static readonly PlatformID BuildPlatform =
+#if WIN32
+            PlatformID.Win32NT;
+#else
+            PlatformID.Unix;
+#endif
+
         public static void Main(string[] args)
         {
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT && BuildPlatform != PlatformID.Win32NT || (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix) && BuildPlatform != PlatformID.Unix)
+                throw new PlatformNotSupportedException("This binary was built for " + Enum.GetName(typeof(PlatformID), BuildPlatform) + ", but the current platform is " + Enum.GetName(typeof(PlatformID), Environment.OSVersion.Platform));
+
             Parser.Default.ParseArguments<CeilidhArguments>(args).WithParsed(x =>
             {
                 x.UserDataPath = x.UserDataPath ?? Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ceilidh");

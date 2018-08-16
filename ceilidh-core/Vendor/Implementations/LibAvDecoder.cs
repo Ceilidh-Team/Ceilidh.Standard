@@ -9,16 +9,26 @@ namespace Ceilidh.Core.Vendor.Implementations
     public sealed class LibAvDecoder : IDecoder
     {
         private readonly bool _supported;
+        private readonly ILocalizationController _localization;
 
-        public LibAvDecoder()
+        public LibAvDecoder(ILocalizationController localization)
         {
+            _localization = localization;
+
             try
             {
                 AvFormatContext.RegisterAllFormats();
+
+                Console.WriteLine(_localization.Translate("libav.util.version", AvIoContext.AvUtilVersion));
+                Console.WriteLine(_localization.Translate("libav.format.version", AvFormatContext.AvFormatVersion));
+                Console.WriteLine(_localization.Translate("libav.codec.version", AvFormatContext.AvCodecVersion));
+
                 _supported = true;
             }
             catch(TypeLoadException)
             {
+                Console.WriteLine(_localization.Translate("libav.disabled"));
+
                 _supported = false;
             }
         }
@@ -67,6 +77,15 @@ namespace Ceilidh.Core.Vendor.Implementations
         private delegate int ReadWritePacketHandler(IntPtr opaque, byte* buf, int bufSize);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate long SeekHandler(IntPtr opaque, long offset, int whence);
+
+        public static Version AvUtilVersion
+        {
+            get
+            {
+                var ver = avutil_version();
+                return new Version((ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
+            }
+        }
 
         private static readonly ReadWritePacketHandler Read = ReadImpl;
         private static readonly SeekHandler Seek = SeekImpl;
@@ -159,6 +178,13 @@ namespace Ceilidh.Core.Vendor.Implementations
 #endif  
         private static extern void av_freep(ref void* buffer);
 
+#if WIN32
+        [DllImport("avutil-54")]
+#else
+        [DllImport("avutil")]
+#endif  
+        private static extern int avutil_version();
+
 #pragma warning restore IDE1006
 
         #endregion
@@ -166,6 +192,24 @@ namespace Ceilidh.Core.Vendor.Implementations
 
     internal unsafe class AvFormatContext : IDisposable
     {
+        public static Version AvFormatVersion
+        {
+            get
+            {
+                var ver = avformat_version();
+                return new Version((ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
+            }
+        }
+
+        public static Version AvCodecVersion
+        {
+            get
+            {
+                var ver = avcodec_version();
+                return new Version((ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
+            }
+        }
+
         private bool _isOpen;
         private AvFormatContextStruct* _basePtr;
         private readonly AvIoContext _context;
@@ -240,11 +284,26 @@ namespace Ceilidh.Core.Vendor.Implementations
         private static extern void avformat_free_context(ref AvFormatContextStruct* context);
 
 #if WIN32
+        [DllImport("avformat-56")]
+#else
+        [DllImport("avformat")]
+#endif
+        private static extern int avformat_version();
+
+#if WIN32
+        [DllImport("avcodec-56")]
+#else
+        [DllImport("avcodec")]
+#endif
+        private static extern int avcodec_version();
+
+#if WIN32
         [DllImport("avformat-56", EntryPoint = "av_register_all")]
 #else
         [DllImport("avformat", EntryPoint = "av_register_all")]
 #endif
         public static extern void RegisterAllFormats();
+
 
 #pragma warning restore IDE1006
 

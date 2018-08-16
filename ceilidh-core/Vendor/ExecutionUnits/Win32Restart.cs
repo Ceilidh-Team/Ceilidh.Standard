@@ -4,6 +4,7 @@ using Ceilidh.Core.Plugin.Attributes;
 
 namespace Ceilidh.Core.Vendor.ExecutionUnits
 {
+#if WIN32
     [ExecutionUnit(SupportedPlatforms = new[]
     {
         PlatformID.Win32NT
@@ -39,4 +40,5 @@ namespace Ceilidh.Core.Vendor.ExecutionUnits
             NoReboot = 8
         }
     }
+#endif
 }

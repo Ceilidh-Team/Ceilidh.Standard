@@ -13,17 +13,22 @@
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <Deterministic>false</Deterministic>
     <Authors>Ceilidh</Authors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
+  <Choose>
+    <When Condition="'$(Configuration)' == 'Debug'">
+      <PropertyGroup>
+        <DefineDebug/>
+        <DefineTrace/>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(Configuration)' == 'Release'"></When>
+  </Choose>
   <Choose>
     <When Condition="'$(OS)' == 'Windows_NT'">
       <PropertyGroup>
         <DefineConstants>WIN32</DefineConstants>
+        <Platform>AnyCPU</Platform>
       </PropertyGroup>
       <ItemGroup>
         <None Update="avcodec-56.dll">
@@ -121,6 +126,7 @@
     <When Condition="'$(OS)' == 'Unix'">
       <PropertyGroup>
         <DefineConstants>UNIX</DefineConstants>
+        <Platform>x64</Platform>
       </PropertyGroup>
     </When>
   </Choose>
