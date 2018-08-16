@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using Ceilidh.Core.Vendor.Contracts;
 
 namespace Ceilidh.Core.Vendor.ExecutionUnits
@@ -14,6 +15,23 @@ namespace Ceilidh.Core.Vendor.ExecutionUnits
 
         public bool TryDecode(LowTrack track, out AudioStream audioData)
         {
+            foreach (var decoder in _decoders)
+            {
+                Stream lastStream = null;
+                try
+                {
+                    if (decoder.TryDecode(lastStream = track.GetStream(), out audioData))
+                        return true;
+                }
+                catch
+                {
+                    lastStream?.Dispose();
+                    throw;
+                }
+
+                lastStream.Dispose();
+            }
+
             audioData = null;
             return false;
         }

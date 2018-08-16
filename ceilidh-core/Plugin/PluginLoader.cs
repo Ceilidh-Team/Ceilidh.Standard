@@ -65,8 +65,9 @@ namespace Ceilidh.Core.Plugin
 
                     // Locate every execution unit in the assembly
                     foreach (var exUnit in asm.GetExportedTypes()
-                        .Where(x => x.GetCustomAttribute<ExecutionUnitAttribute>() != null ||
-                                    x.GetInterfaces().Any(y => y.GetCustomAttribute<ContractAttribute>() != null))
+                        .Where(x => (x.GetCustomAttribute<ExecutionUnitAttribute>() != null
+                                    || x.GetInterfaces().Any(y => y.GetCustomAttribute<ContractAttribute>() != null))
+                                    && (x.GetCustomAttribute<ExecutionUnitAttribute>()?.SupportedPlatforms?.Contains(Environment.OSVersion.Platform) ?? true))
                         .Where(x => !exclude.Contains(x.FullName)))
                         executionUnits.Add(exUnit);
                 }
