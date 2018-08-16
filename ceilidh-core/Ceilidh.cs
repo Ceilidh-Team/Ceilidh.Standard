@@ -12,11 +12,12 @@ namespace Ceilidh.Core
 {
     internal static class Ceilidh
     {
-        public static readonly PlatformID BuildPlatform =
+        public const PlatformID BuildPlatform =
 #if WIN32
             PlatformID.Win32NT;
 #else
             PlatformID.Unix;
+
 #endif
 
         public static void Main(string[] args)
