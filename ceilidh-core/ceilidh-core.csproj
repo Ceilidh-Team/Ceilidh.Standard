@@ -15,11 +15,21 @@
     <Authors>Ceilidh</Authors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'win-x64'">
+    <OS>Windows_NT</OS>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64'">
+    <OS>Unix</OS>
+  </PropertyGroup>
+  <Target Name="BeforePublish">
+    <Choose>
+    </Choose>
+  </Target>
   <Choose>
     <When Condition="'$(Configuration)' == 'Debug'">
       <PropertyGroup>
-        <DefineDebug/>
-        <DefineTrace/>
+        <DefineDebug />
+        <DefineTrace />
       </PropertyGroup>
     </When>
     <When Condition="'$(Configuration)' == 'Release'"></When>
@@ -27,7 +37,7 @@
   <Choose>
     <When Condition="'$(OS)' == 'Windows_NT'">
       <PropertyGroup>
-        <DefineConstants>WIN32</DefineConstants>
+        <DefineConstants>WIN32;$(DefineConstants)</DefineConstants>
         <Platform>AnyCPU</Platform>
       </PropertyGroup>
       <ItemGroup>
@@ -125,7 +135,7 @@
     </When>
     <When Condition="'$(OS)' == 'Unix'">
       <PropertyGroup>
-        <DefineConstants>UNIX</DefineConstants>
+        <DefineConstants>UNIX;$(DefineConstants)</DefineConstants>
         <Platform>x64</Platform>
       </PropertyGroup>
     </When>

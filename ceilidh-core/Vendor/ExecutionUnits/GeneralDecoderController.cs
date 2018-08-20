@@ -13,7 +13,7 @@ namespace Ceilidh.Core.Vendor.ExecutionUnits
             _decoders = new List<IDecoder>(decoders);
         }
 
-        public bool TryDecode(LowTrack track, out AudioStream audioData)
+        public bool TryDecode(LowTrack track, out AudioData audioData)
         {
             foreach (var decoder in _decoders)
             {

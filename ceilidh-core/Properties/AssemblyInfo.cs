@@ -11,9 +11,8 @@ using Ceilidh.Core.Plugin.Attributes;
 [assembly: AssemblyDescription("Core module for Ceilidh.")]
 [assembly: AssemblyTitle("Ceilidh Core")]
 
-[assembly: InternalsVisibleTo("ceilidh-core-tests")]
-
 #if DEBUG
+[assembly: InternalsVisibleTo("ceilidh-core-tests")]
 [assembly: AssemblyConfiguration("Debug")]
 #else
 [assembly: AssemblyConfiguration("Release")]

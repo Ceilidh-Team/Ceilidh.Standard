@@ -2,6 +2,6 @@
 {
     public interface IDecoderController
     {
-        bool TryDecode(LowTrack track, out AudioStream audioData);
+        bool TryDecode(LowTrack track, out AudioData audioData);
     }
 }

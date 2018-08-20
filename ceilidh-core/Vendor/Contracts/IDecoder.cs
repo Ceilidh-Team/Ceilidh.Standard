@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Ceilidh.Core.Plugin.Attributes;
 
@@ -7,7 +8,18 @@ namespace Ceilidh.Core.Vendor.Contracts
     [Contract]
     public interface IDecoder
     {
-        bool TryDecode(Stream source, out AudioStream audioData);
+        bool TryDecode(Stream source, out AudioData audioData);
+    }
+
+    public abstract class AudioData : IDisposable
+    {
+        public abstract IReadOnlyDictionary<string, string> Metadata { get; }
+        public abstract int SteamCount { get; }
+        public abstract int SelectedStream { get; }
+        public abstract bool TrySelectStream(int streamIndex);
+        public abstract AudioStream GetAudioStream();
+
+        public abstract void Dispose();
     }
 
     public abstract class AudioStream : Stream

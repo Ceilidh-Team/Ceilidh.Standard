@@ -1,6 +1,7 @@
 using Ceilidh.Core.Util;
 using Ceilidh.Core.Vendor.Contracts;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -33,7 +34,7 @@ namespace Ceilidh.Core.Vendor.Implementations
             }
         }
 
-        public bool TryDecode(Stream source, out AudioStream audioData)
+        public bool TryDecode(Stream source, out AudioData audioData)
         {
             audioData = null;
             if (!_supported) return false;
@@ -48,12 +49,14 @@ namespace Ceilidh.Core.Vendor.Implementations
                 {
                     format = new AvFormatContext(io);
 
-                    if (format.OpenInput() != AvError.Ok)
+                    if (format.OpenInput() != AvError.Ok || format.FindStreamInfo() != AvError.Ok)
                     {
                         format.Dispose();
                         io.Dispose();
                         return false;
                     }
+
+                    var data = format.GetFileMetadata();
 
                     return true;
                 }
@@ -68,6 +71,32 @@ namespace Ceilidh.Core.Vendor.Implementations
                 io?.Dispose();
                 throw;
             }
+        }
+    }
+
+    internal class LibAvAudioData : AudioData
+    {
+        public override IReadOnlyDictionary<string, string> Metadata { get; }
+        public override int SteamCount { get; }
+        public override int SelectedStream { get; }
+
+        private readonly AvIoContext _ioContext;
+        private readonly AvFormatContext _formatContext;
+
+        public LibAvAudioData(AvIoContext io, AvFormatContext format)
+        {
+            _ioContext = io;
+            _formatContext = format;
+        }
+
+        public override bool TrySelectStream(int streamIndex) => throw new NotImplementedException();
+
+        public override AudioStream GetAudioStream() => throw new NotImplementedException();
+
+        public override void Dispose()
+        {
+            _formatContext.Dispose();
+            _ioContext.Dispose();
         }
     }
 
@@ -216,10 +245,10 @@ namespace Ceilidh.Core.Vendor.Implementations
 
         public AvFormatContext(AvIoContext ioContext)
         {
-            _basePtr = avformat_alloc_context();
-            _basePtr->pb = ioContext.BasePointer;
-
             _context = ioContext;
+
+            _basePtr = avformat_alloc_context();
+            _basePtr->pb = _context.BasePointer;
         }
 
         public AvError OpenInput(string url = "")
@@ -233,6 +262,28 @@ namespace Ceilidh.Core.Vendor.Implementations
             return res;
         }
 
+        public AvError FindStreamInfo() => avformat_find_stream_info(_basePtr, null);
+
+        public List<IReadOnlyDictionary<string, string>> GetFileMetadata()
+        {
+            var l = new List<IReadOnlyDictionary<string, string>>();
+
+            for (var i = 0; i < _basePtr->nb_streams; i++)
+            {
+                var data = new Dictionary<string, string>();
+
+                var dict = _basePtr->streams[i]->metadata;
+
+                AvDictionaryEntry* tag = null;
+                while ((tag = av_dict_get(dict, "", tag, 2 /* AV_DICT_IGNORE_SUFFIX */)) != null)
+                    data.Add(tag->Key, tag->Value);
+
+                l.Add(data);
+            }
+
+            return l;
+        }
+
         public void Dispose()
         {
             if (_basePtr != null && _isOpen)
@@ -244,11 +295,63 @@ namespace Ceilidh.Core.Vendor.Implementations
         [StructLayout(LayoutKind.Sequential)]
         private struct AvFormatContextStruct
         {
-            private void* av_class;
-            private void* iformat;
-            private void* oformat;
-            private void* priv_data;
+            public void* av_class;
+            public void* iformat;
+            public void* oformat;
+            public void* priv_data;
             public void* pb;
+            public int ctx_flags;
+            public uint nb_streams;
+            public AvStream** streams;
+            public fixed byte filename[1024];
+            public char* url;
+            public long start_time;
+            public long duration;
+            public int bit_rate;
+            public uint packet_size;
+            public int max_delay;
+            public int flags;
+            public uint probesize;
+            public int max_analyze_duration;
+            public byte* key;
+            public int keylen;
+            public uint nb_programs;
+            public void** programs;
+            public int video_codec_id;
+            public int audio_codec_id;
+            public int subtitle_codec_id;
+            public uint max_index_size;
+            public uint max_picture_buffer;
+            public uint nb_chapters;
+            public void** chapters;
+            public void* metadata;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct AvStream
+        {
+            public int index;
+            public int id;
+            public void* codec;
+            public void* priv_data;
+            public long time_base;
+            public long start_time;
+            public long duration;
+            public long nb_frames;
+            public int disposition;
+            public int discard;
+            public long sample_aspect_ratio;
+            public void* metadata;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct AvDictionaryEntry
+        {
+            private readonly char* _key;
+            private readonly char* _value;
+
+            public string Key => new string(_key);
+            public string Value => new string(_value);
         }
 
         #region Native
@@ -291,11 +394,25 @@ namespace Ceilidh.Core.Vendor.Implementations
         private static extern int avformat_version();
 
 #if WIN32
+        [DllImport("avformat-56")]
+#else
+        [DllImport("avformat")]
+#endif
+        private static extern AvError avformat_find_stream_info(AvFormatContextStruct* context, void* options);
+
+#if WIN32
         [DllImport("avcodec-56")]
 #else
         [DllImport("avcodec")]
 #endif
         private static extern int avcodec_version();
+
+#if WIN32
+        [DllImport("avutil-54")]
+#else
+        [DllImport("avutil")]
+#endif
+        private static extern AvDictionaryEntry* av_dict_get(void* dict, [MarshalAs(UnmanagedType.LPStr)] string key, AvDictionaryEntry* prevEntry, int flags);
 
 #if WIN32
         [DllImport("avformat-56", EntryPoint = "av_register_all")]
