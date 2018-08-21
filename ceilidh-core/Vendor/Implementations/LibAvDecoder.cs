@@ -1,6 +1,7 @@
 using Ceilidh.Core.Util;
 using Ceilidh.Core.Vendor.Contracts;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -95,7 +96,10 @@ namespace Ceilidh.Core.Vendor.Implementations
             _formatContext = format;
         }
 
-        public override bool TrySelectStream(int streamIndex) => throw new NotImplementedException();
+        public override bool TrySelectStream(int streamIndex)
+        {
+            return false;
+        }
 
         public override AudioStream GetAudioStream() => throw new NotImplementedException();
 
@@ -355,21 +359,66 @@ namespace Ceilidh.Core.Vendor.Implementations
                 DontOverwrite = 16,
                 Append = 32
             }
-
-            public IReadOnlyDictionary<string, string> CreateCopy()
+            
+            private class AvDictionaryEnumerator : IEnumerator<KeyValuePair<string, string>>
             {
-                var dict = new Dictionary<string, string>();
+                private AvDictionaryEntry* _entry;
+                public KeyValuePair<string, string> Current => new KeyValuePair<string, string>(_entry->Key, _entry->Value);
 
-                fixed (AvDictionary* ptr = &this)
-                fixed (byte* keyData = new byte[] { 0 })
+                object IEnumerator.Current => Current;
+
+                private readonly AvDictionary* _dictPtr;
+                
+                public AvDictionaryEnumerator(AvDictionary* dictPtr)
                 {
-                    AvDictionaryEntry* entry = null;
-                    while ((entry = av_dict_get(ptr, keyData, entry, AvDictionaryFlags.IgnoreSuffix)) != null)
-                        dict.Add(entry->Key, entry->Value);
+                    _dictPtr = dictPtr;
+                    _entry = null;
+                }
+                
+                public bool MoveNext()
+                {
+                    fixed (byte* keyData = new byte[] {0})
+                        _entry = av_dict_get(_dictPtr, keyData, _entry, AvDictionaryFlags.IgnoreSuffix);
+
+                    return _entry != null;
                 }
 
-                return dict;
+                public void Reset()
+                {
+                    _entry = null;
+                }
+
+                public void Dispose()
+                {
+                    
+                }
             }
+            
+            private class AvDictionaryEnumerable : IEnumerable<KeyValuePair<string, string>>
+            {
+                private readonly AvDictionary* _dictPtr;
+                
+                public AvDictionaryEnumerable(AvDictionary* dictPtr)
+                {
+                    _dictPtr = dictPtr;
+                }
+                
+                
+                public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => new AvDictionaryEnumerator(_dictPtr);
+
+                IEnumerator IEnumerable.GetEnumerator()
+                {
+                    return GetEnumerator();
+                }
+            }
+
+            public IEnumerable<KeyValuePair<string, string>> EnumerateEntries()
+            {
+                fixed (AvDictionary* ptr = &this)
+                    return new AvDictionaryEnumerable(ptr);
+            }
+            
+            public IReadOnlyDictionary<string, string> CreateCopy() => EnumerateEntries().ToDictionary(x => x.Key, x => x.Value);
 
             public void Add(KeyValuePair<string, string> item) => Add(item.Key, item.Value);
 
@@ -452,6 +501,15 @@ namespace Ceilidh.Core.Vendor.Implementations
                         av_dict_set(ref copy, keyData, valueData, 0);
                     }
                 }
+            }
+
+            public static ref AvDictionary CreateDictionary(IReadOnlyDictionary<string, string> initialData)
+            {
+                AvDictionary* dict = null;
+
+                av_dict_set(ref dict, null, null, 0);
+
+                return ref *dict;
             }
 
             #region Native
