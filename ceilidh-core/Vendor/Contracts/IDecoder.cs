@@ -14,7 +14,7 @@ namespace Ceilidh.Core.Vendor.Contracts
     public abstract class AudioData : IDisposable
     {
         public abstract IReadOnlyDictionary<string, string> Metadata { get; }
-        public abstract int SteamCount { get; }
+        public abstract int StreamCount { get; }
         public abstract int SelectedStream { get; }
         public abstract bool TrySelectStream(int streamIndex);
         public abstract AudioStream GetAudioStream();
