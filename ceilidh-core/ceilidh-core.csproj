@@ -14,6 +14,7 @@
     <Deterministic>false</Deterministic>
     <Authors>Ceilidh</Authors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'win-x64'">
     <OS>Windows_NT</OS>
@@ -32,7 +33,8 @@
         <DefineTrace />
       </PropertyGroup>
     </When>
-    <When Condition="'$(Configuration)' == 'Release'"></When>
+    <When Condition="'$(Configuration)' == 'Release'">
+    </When>
   </Choose>
   <Choose>
     <When Condition="'$(OS)' == 'Windows_NT'">
