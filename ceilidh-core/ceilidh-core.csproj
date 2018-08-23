@@ -39,9 +39,6 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
-  <PropertyGroup >
-    <OS>Windows_NT</OS>
-  </PropertyGroup>
   <Target Name="BeforePublish">
     <Choose>
     </Choose>

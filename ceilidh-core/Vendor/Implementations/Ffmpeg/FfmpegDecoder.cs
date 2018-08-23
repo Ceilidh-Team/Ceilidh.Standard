@@ -53,6 +53,10 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                         return false;
                     }
 
+                    var file = format.GetFileMetadata();
+                    foreach (var (key, value) in file)
+                        Console.WriteLine($"{key}: {value}");
+                    
                     var data = format.GetStreamMetadata();
 
                     foreach (var stream in data)

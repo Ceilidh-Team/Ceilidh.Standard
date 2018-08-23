@@ -34,14 +34,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
         public ReadOnlySpan<AvStreamReference> Streams => new ReadOnlySpan<AvStreamReference>(_streams, (int)_streamCount);
 
-        public string Filename
-        {
-            get
-            {
-                fixed(byte* ptr = _filename)
-                    return Marshal.PtrToStringUTF8(new IntPtr(ptr), 1024);
-            }
-        }
+        public string Url => Marshal.PtrToStringUTF8(new IntPtr(_url), 1024);
 
         public TimeSpan StartTime => new TimeSpan(_startTime * TIME_BASE * 10);
         public TimeSpan Duration => new TimeSpan(_duration * TIME_BASE * 10);
@@ -67,7 +60,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public readonly int ContextFlags; // TODO: Enum
         private readonly uint _streamCount;
         private readonly AvStream** _streams;
-        private fixed byte _filename[1024];
+        private readonly byte* _url;
         private readonly long _startTime;
         private readonly long _duration;
         public readonly long BitRate;
@@ -86,28 +79,11 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public uint MaxIndexSize;
         public uint MaxPictureBuffer;
         public readonly uint ChapterCount;
-        public readonly void** Cahapters;
+        public readonly void** Chapters;
         private readonly AvDictionaryStruct* _metadata;
 
 #pragma warning restore 169
 #pragma warning restore 649
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct AvStream
-    {
-        public int index;
-        public int id;
-        public void* codec;
-        public void* priv_data;
-        public long time_base;
-        public long start_time;
-        public long duration;
-        public long nb_frames;
-        public int disposition;
-        public int discard;
-        public long sample_aspect_ratio;
-        public AvDictionaryStruct* metadata;
     }
 
     internal unsafe class AvFormatContext : IDisposable
@@ -137,14 +113,24 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
         public AvError FindStreamInfo() => avformat_find_stream_info(_basePtr, null);
 
+        public void OpenCodecs()
+        {
+                foreach (var streamRef in _basePtr->Streams)
+                {
+                    ref readonly var stream = ref streamRef.Stream;
+                    var codec = avcodec_find_decoder(stream.Codec->CodecId);
+                    avcodec_open2(stream.Codec, codec, null);
+                }
+        }
+
         public IReadOnlyDictionary<string, string>[] GetStreamMetadata()
         {
             var streams = _basePtr->Streams;
 
-            var arr = new IReadOnlyDictionary<string, string>[streams.Length];
+             var arr = new IReadOnlyDictionary<string, string>[streams.Length];
 
-            for(var i = 0; i < streams.Length; i++)
-                arr[i] = new AvDictionary(streams[i].Stream.metadata, false);
+            for (var i = 0; i < streams.Length; i++)
+                arr[i] = streams[i].Stream.Metadata;
 
             return arr;
         }
@@ -163,6 +149,20 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
 #pragma warning disable IDE1006
 
+#if WIN32
+        [DllImport("avcodec-58")]
+#else
+        [DllImport("avcodec")]
+#endif
+        private static extern int avcodec_open2(AvCodecContext* context, AvCodec* codec, AvDictionaryStruct** options);
+
+#if WIN32
+        [DllImport("avcodec-58")]
+#else
+        [DllImport("avcodec")]
+#endif
+        private static extern AvCodec* avcodec_find_decoder(int codecId);
+            
 #if WIN32
         [DllImport("avformat-58")]
 #else

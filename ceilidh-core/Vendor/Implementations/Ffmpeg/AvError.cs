@@ -114,7 +114,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public static string GetErrorString(this AvError err)
         {
             var buf = stackalloc byte[MaxErrorStringSize];
-            return av_strerror(err, buf, MaxErrorStringSize) < 0 ? null : Encoding.UTF8.GetString(new ReadOnlySpan<byte>(buf, MaxErrorStringSize)).TrimEnd('\0');
+            return av_strerror(err, buf, MaxErrorStringSize) < 0 ? null : Marshal.PtrToStringUTF8(new IntPtr(buf), MaxErrorStringSize);
         }
         
 #if WIN32
