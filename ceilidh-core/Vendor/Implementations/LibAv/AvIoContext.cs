@@ -52,19 +52,26 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
         /// <param name="stream"></param>
         public AvIoContext(Stream stream)
         {
+            _ownHandle = true;
             _streamHandle = GCHandle.Alloc(stream);
 
             _buffer = av_malloc(Environment.SystemPageSize);
             _basePtr = avio_alloc_context(_buffer, Environment.SystemPageSize, stream.CanWrite ? 1 : 0,
-                GCHandle.ToIntPtr(_streamHandle), stream.CanRead ? ReadDelegate : null, stream.CanWrite ? WriteDelegate : null, stream.CanSeek ? SeekDelegate : null);
+                GCHandle.ToIntPtr(_streamHandle), stream.CanRead ? ReadDelegate : null,
+                stream.CanWrite ? WriteDelegate : null, stream.CanSeek ? SeekDelegate : null);
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (_buffer != null)
-                av_freep(ref _buffer);
-            if (_basePtr != null)
-                av_freep(ref _basePtr);
+            if (_ownHandle)
+            {
+
+                if (_buffer != null)
+                    av_freep(ref _buffer);
+                if (_basePtr != null)
+                    avio_context_free(ref _basePtr);
+            }
+
             if (_streamHandle.IsAllocated)
                 _streamHandle.Free();
         }
@@ -85,13 +92,13 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
             switch (origin)
             {
                 case SeekOrigin.Begin:
-                    whence = 1;
+                    whence = 0;
                     break;
                 case SeekOrigin.Current:
-                    whence = 2;
+                    whence = 1;
                     break;
                 case SeekOrigin.End:
-                    whence = 3;
+                    whence = 2;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(origin));
@@ -143,11 +150,11 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
 
             switch (whence)
             {
-                case 1:
+                case 0:
                     return stream.Seek(offset, SeekOrigin.Begin);
-                case 2:
+                case 1:
                     return stream.Seek(offset, SeekOrigin.Current);
-                case 3:
+                case 2:
                     return stream.Seek(offset, SeekOrigin.End);
                 case 0x10000:
                     return stream.Length;
@@ -165,6 +172,13 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
 #endif
         private static extern void* avio_alloc_context(void* buffer, int bufferSize, int writeFlag,
             IntPtr opaque, ReadWritePacketHandler readPacket, ReadWritePacketHandler writePacket, SeekHandler seek);
+
+#if WIN32
+        [DllImport("avformat-58")]
+#else
+        [DllImport("avformat")]
+#endif
+        private static extern void avio_context_free(ref void* s);
 
 #if WIN32
         [DllImport("avutil-56")]
