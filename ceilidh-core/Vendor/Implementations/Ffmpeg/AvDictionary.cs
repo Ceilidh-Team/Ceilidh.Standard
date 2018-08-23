@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Ceilidh.Core.Util;
 
-namespace Ceilidh.Core.Vendor.Implementations.LibAv
+namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 {
     [StructLayout(LayoutKind.Sequential)]
     internal struct AvDictionaryEntry
@@ -18,7 +18,9 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
         public string Value => Marshal.PtrToStringUTF8(_value);
     }
 
-    internal unsafe class AvDictionary : IDictionary<string, string>, IReadOnlyDictionary<string, string>
+    internal struct AvDictionaryStruct { }
+
+    internal sealed unsafe class AvDictionary : IDictionary<string, string>, IReadOnlyDictionary<string, string>, IDisposable
     {
         [Flags]
         private enum AvDictionaryFlags
@@ -61,7 +63,7 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
         }
 
         private readonly bool _ownPtr;
-        private void* _dictPtr;
+        private AvDictionaryStruct* _dictPtr;
 
         public ICollection<string> Keys => this.Select(x => x.Key).ToList();
         IEnumerable<string> IReadOnlyDictionary<string, string>.Values => Values;
@@ -99,15 +101,19 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
                 Add(pair);
         }
 
-        public AvDictionary(void* dictPtr, bool ownPtr = true)
+        public AvDictionary(AvDictionaryStruct* dictPtr, bool ownPtr = true)
         {
             _dictPtr = dictPtr;
             _ownPtr = ownPtr;
         }
 
-        public AvDictionary(IntPtr dictPtr, bool ownPtr = true) : this(dictPtr.ToPointer(), ownPtr)
+        public AvDictionary(IntPtr dictPtr, bool ownPtr = true) : this((AvDictionaryStruct*)dictPtr.ToPointer(), ownPtr)
         {
+        }
 
+        public ref AvDictionaryStruct GetPinnableReference()
+        {
+            return ref *_dictPtr;
         }
 
         public void Add(string key, string value)
@@ -172,14 +178,27 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+        public void Dispose()
+        {
+            if (_ownPtr && _dictPtr != null)
+                av_freep(ref _dictPtr);
+        }
+
         #region Native
 
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
+#endif  
+        private static extern void av_freep(ref AvDictionaryStruct* buffer);
+
+#if WIN32
+        [DllImport("avutil-56")]
+#else
+        [DllImport("avutil")]
 #endif
-        private static extern AvDictionaryEntry* av_dict_get(void* m,
+        private static extern AvDictionaryEntry* av_dict_get(AvDictionaryStruct* m,
             byte* key, AvDictionaryEntry* prev, AvDictionaryFlags flags);
 
 #if WIN32
@@ -194,7 +213,7 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
 #else
         [DllImport("avutil")]
 #endif
-        private static extern int av_dict_set(ref void* pm, byte* key,
+        private static extern int av_dict_set(ref AvDictionaryStruct* pm, byte* key,
             byte* value, AvDictionaryFlags flags);
 
 #if WIN32
@@ -202,14 +221,14 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
 #else
         [DllImport("avutil")]
 #endif
-        private static extern void av_dict_copy(ref void* dst, void* src, AvDictionaryFlags flags);
+        private static extern void av_dict_copy(ref AvDictionaryStruct* dst, AvDictionaryStruct* src, AvDictionaryFlags flags);
 
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
 #endif
-        private static extern void av_dict_free(ref void* m);
+        private static extern void av_dict_free(ref AvDictionaryStruct* m);
 
         #endregion
     }

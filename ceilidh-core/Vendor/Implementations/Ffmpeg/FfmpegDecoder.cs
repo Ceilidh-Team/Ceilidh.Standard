@@ -1,21 +1,15 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using Ceilidh.Core.Util;
 using Ceilidh.Core.Vendor.Contracts;
 
-namespace Ceilidh.Core.Vendor.Implementations.LibAv
+namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 {
-    public sealed class LibAvDecoder : IDecoder
+    public sealed class FfmpegDecoder : IDecoder
     {
         private readonly bool _supported;
         private readonly ILocalizationController _localization;
 
-        public LibAvDecoder(ILocalizationController localization)
+        public FfmpegDecoder(ILocalizationController localization)
         {
             _localization = localization;
 
@@ -23,9 +17,9 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
             {
                 AvFormatContext.RegisterAllFormats();
 
-                Console.WriteLine(_localization.Translate("libav.util.version", AvIoContext.AvUtilVersion));
-                Console.WriteLine(_localization.Translate("libav.format.version", AvFormatContext.AvFormatVersion));
-                Console.WriteLine(_localization.Translate("libav.codec.version", AvFormatContext.AvCodecVersion));
+                Console.WriteLine(_localization.Translate("libav.util.version", FfmpegVersion.AvUtilVersion));
+                Console.WriteLine(_localization.Translate("libav.format.version", FfmpegVersion.AvFormatVersion));
+                Console.WriteLine(_localization.Translate("libav.codec.version", FfmpegVersion.AvCodecVersion));
 
                 _supported = true;
             }

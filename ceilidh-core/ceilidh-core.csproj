@@ -16,11 +16,31 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'win-x64'">
+  <Choose>
+    <When Condition="'$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'win-x64'">
+      <PropertyGroup>
+        <OS>Windows_NT</OS>
+      </PropertyGroup>
+      <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x86'">
+        <Platform>x86</Platform>
+      </PropertyGroup>
+      <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+        <Platform>x64</Platform>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64'">
+      <PropertyGroup>
+        <OS>Unix</OS>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <Platform>AnyCPU</Platform>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <PropertyGroup >
     <OS>Windows_NT</OS>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64'">
-    <OS>Unix</OS>
   </PropertyGroup>
   <Target Name="BeforePublish">
     <Choose>
@@ -40,7 +60,6 @@
     <When Condition="'$(OS)' == 'Windows_NT'">
       <PropertyGroup>
         <DefineConstants>WIN32;$(DefineConstants)</DefineConstants>
-        <Platform>AnyCPU</Platform>
       </PropertyGroup>
       <ItemGroup>
         <None Update="avcodec-58.dll">

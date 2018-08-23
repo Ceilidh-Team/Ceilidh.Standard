@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Ceilidh.Core.Util;
 
-namespace Ceilidh.Core.Vendor.Implementations.LibAv
+namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 {
     internal enum AvError
     {

@@ -3,9 +3,82 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Ceilidh.Core.Util;
 
-namespace Ceilidh.Core.Vendor.Implementations.LibAv
+namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 {
-    
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct AvIoContextStruct
+    {
+        public Span<byte> Buffer => new Span<byte>(_buffer, _bufferSize);
+        public Span<byte> ActiveBufferSegment => new Span<byte>(_bufferPointer, (int)(_bufferEnd - _bufferPointer));
+
+        public Stream Stream
+        {
+            get
+            {
+                if (_opaque == IntPtr.Zero)
+                    return null;
+
+                try
+                {
+                    var handle = GCHandle.FromIntPtr(_opaque);
+                    return handle.IsAllocated ? handle.Target as Stream : null;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
+
+        public bool MustFlush
+        {
+            get => _mustFlush != 0;
+            set => _mustFlush = value ? 1 : 0;
+        }
+
+        public bool EofReached => _eofReached != 0;
+
+        public bool WriteFlag => _writeFlag != 0;
+
+        public bool Direct
+        {
+            get => _direct != 0;
+            set => _direct = value ? 1 : 0;
+        }
+
+#pragma warning disable 169
+#pragma warning disable 649
+
+        public readonly void* AvClass;
+        private readonly byte* _buffer;
+        private readonly int _bufferSize;
+        private readonly byte* _bufferPointer;
+        private readonly byte* _bufferEnd;
+        private readonly IntPtr _opaque;
+        private readonly IntPtr _readPacket;
+        private readonly IntPtr _writePacket;
+        private readonly IntPtr _seek;
+        public readonly long Position;
+        private int _mustFlush;
+        private readonly int _eofReached;
+
+        private readonly int _writeFlag;
+        public readonly int MaxPacketSize;
+        private readonly long _checksum;
+        private readonly byte* _checksumPtr;
+        private readonly void* _updateChecksum;
+        public AvError Error;
+        private readonly void* _readPause;
+
+        private readonly void* _readSeek;
+        private readonly int _seekable;
+        private readonly long _maxSize;
+        private int _direct;
+
+#pragma warning restore 649
+#pragma warning restore 169
+    }
+
     internal sealed unsafe class AvIoContext : Stream
     {
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -17,20 +90,9 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
         private static readonly ReadWritePacketHandler WriteDelegate = WriteImpl;
         private static readonly SeekHandler SeekDelegate = SeekImpl;
 
-        public static Version AvUtilVersion
-        {
-            get
-            {
-                var ver = avutil_version();
-                return new Version((ver >> 16) & 0xFF, (ver >> 8) & 0xFF, ver & 0xFF);
-            }
-        }
-        
-        public void* BasePointer => _basePtr;
-        
         private readonly bool _ownHandle;
-        private void* _buffer;
-        private void* _basePtr;
+        private byte* _buffer;
+        private AvIoContextStruct* _basePtr;
         private GCHandle _streamHandle;
 
         /// <inheritdoc />
@@ -39,7 +101,7 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
         /// </summary>
         /// <param name="basePtr">The pointer to the existing context</param>
         /// <param name="ownHandle">If true, this instance will free the AvIoContext when Dispose is called. This does not free the internal buffer</param>
-        public AvIoContext(void* basePtr, bool ownHandle = true)
+        public AvIoContext(AvIoContextStruct* basePtr, bool ownHandle = true)
         {
             _basePtr = basePtr;
             _ownHandle = ownHandle;
@@ -61,6 +123,11 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
                 stream.CanWrite ? WriteDelegate : null, stream.CanSeek ? SeekDelegate : null);
         }
 
+        public ref AvIoContextStruct GetPinnableReference()
+        {
+            return ref *_basePtr;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (_ownHandle)
@@ -76,7 +143,10 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
                 _streamHandle.Free();
         }
 
-        public override void Flush() { }
+        public override void Flush()
+        {
+            avio_flush(_basePtr);
+        }
 
         public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
 
@@ -170,7 +240,7 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
 #else
         [DllImport("avformat")]
 #endif
-        private static extern void* avio_alloc_context(void* buffer, int bufferSize, int writeFlag,
+        private static extern AvIoContextStruct* avio_alloc_context(byte* buffer, int bufferSize, int writeFlag,
             IntPtr opaque, ReadWritePacketHandler readPacket, ReadWritePacketHandler writePacket, SeekHandler seek);
 
 #if WIN32
@@ -178,63 +248,63 @@ namespace Ceilidh.Core.Vendor.Implementations.LibAv
 #else
         [DllImport("avformat")]
 #endif
-        private static extern void avio_context_free(ref void* s);
+        private static extern void avio_context_free(ref AvIoContextStruct* s);
 
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
 #endif
-        private static extern void* av_malloc(NativeInt size);
+        private static extern byte* av_malloc(NativeInt size);
 
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
 #endif  
-        private static extern void av_freep(ref void* buffer);
+        private static extern void av_freep(ref byte* buffer);
 
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
 #endif
-        private static extern void avio_write(void* s, byte* buf, int size);
+        private static extern void avio_write(AvIoContextStruct* s, byte* buf, int size);
         
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
 #endif
-        private static extern long avio_seek(void* s, long offset, int whence);
+        private static extern long avio_seek(AvIoContextStruct* s, long offset, int whence);
         
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
 #endif
-        private static extern int avio_read(void* s, void* buf, int size);
+        private static extern int avio_read(AvIoContextStruct* s, void* buf, int size);
         
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
 #endif
-        private static extern long avio_size(void* s);
+        private static extern long avio_size(AvIoContextStruct* s);
         
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
 #endif
-        private static extern long avio_tell(void* s);
-        
+        private static extern long avio_tell(AvIoContextStruct* s);
+
 #if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
-#endif  
-        private static extern int avutil_version();
+#endif
+        private static extern void avio_flush(AvIoContextStruct* s);
 
         #endregion
     }
