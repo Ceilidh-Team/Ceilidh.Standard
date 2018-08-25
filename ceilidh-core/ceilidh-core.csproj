@@ -31,18 +31,10 @@
     <When Condition="'$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64'">
       <PropertyGroup>
         <OS>Unix</OS>
+        <Platform>x64</Platform>
       </PropertyGroup>
     </When>
-    <Otherwise>
-      <PropertyGroup>
-        <Platform>AnyCPU</Platform>
-      </PropertyGroup>
-    </Otherwise>
   </Choose>
-  <Target Name="BeforePublish">
-    <Choose>
-    </Choose>
-  </Target>
   <Choose>
     <When Condition="'$(Configuration)' == 'Debug'">
       <PropertyGroup>
@@ -88,7 +80,6 @@
     <When Condition="'$(OS)' == 'Unix'">
       <PropertyGroup>
         <DefineConstants>UNIX;$(DefineConstants)</DefineConstants>
-        <Platform>x64</Platform>
       </PropertyGroup>
     </When>
   </Choose>

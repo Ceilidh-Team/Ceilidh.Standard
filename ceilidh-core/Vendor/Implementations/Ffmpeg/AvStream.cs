@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
+using Ceilidh.Core.Vendor.Contracts;
 
 namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 {
@@ -37,5 +39,35 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
 #pragma warning restore 169
 #pragma warning restore 649
+    }
+
+    internal unsafe class AvStreamAudioData : AudioStream
+    {
+        public override bool CanSeek { get; }
+        public override long Length { get; }
+        public override long Position { get; set; }
+        public override AudioFormat Format { get; }
+
+        private readonly AvStream* _stream;
+
+        public AvStreamAudioData(AvStream* stream)
+        {
+            _stream = stream;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

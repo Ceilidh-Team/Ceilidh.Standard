@@ -72,7 +72,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
         public ICollection<string> Values => this.Select(x => x.Value).ToList();
 
-        public int Count => this.Count();
+        public int Count => av_dict_count(_dictPtr);
 
         public bool IsReadOnly => false;
 
@@ -111,6 +111,11 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         {
         }
 
+        public void CopyTo(AvDictionary other)
+        {
+            av_dict_copy(ref other._dictPtr, _dictPtr, 0);
+        }
+
         public ref AvDictionaryStruct GetPinnableReference()
         {
             return ref *_dictPtr;
@@ -121,7 +126,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             fixed (byte* keyData = Encoding.UTF8.GetBytesNullTerminated(key), valueData =
                 Encoding.UTF8.GetBytesNullTerminated(value))
                 if (av_dict_set(ref _dictPtr, keyData, valueData, AvDictionaryFlags.DontOverwrite) < 0)
-                    throw new ArgumentException("", nameof(key)); // TODO: Real thing here
+                    throw new ArgumentException("An item with the same key has already been added.", nameof(key));
         }
 
         public bool ContainsKey(string key)
@@ -181,17 +186,10 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public void Dispose()
         {
             if (_ownPtr && _dictPtr != null)
-                av_freep(ref _dictPtr);
+                av_dict_free(ref _dictPtr);
         }
 
         #region Native
-
-#if WIN32
-        [DllImport("avutil-56")]
-#else
-        [DllImport("avutil")]
-#endif  
-        private static extern void av_freep(ref AvDictionaryStruct* buffer);
 
 #if WIN32
         [DllImport("avutil-56")]
@@ -206,7 +204,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 #else
         [DllImport("avutil")]
 #endif
-        private static extern int av_dict_count(void* m);
+        private static extern int av_dict_count(AvDictionaryStruct* m);
 
 #if WIN32
         [DllImport("avutil-56")]

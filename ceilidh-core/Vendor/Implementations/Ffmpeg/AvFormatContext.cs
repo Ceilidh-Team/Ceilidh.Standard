@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
+using Ceilidh.Core.Util;
 
 namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 {
@@ -24,9 +26,15 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
         public AvIoContext AvIoContext
         {
-            get => new AvIoContext(_avIoContext, false);
+            get => _avIoContext == null ? null : new AvIoContext(_avIoContext, false);
             set
             {
+                if (value == null)
+                {
+                    _avIoContext = null;
+                    return;
+                }
+
                 fixed (AvIoContextStruct* ptr = value)
                     _avIoContext = ptr;
             }
@@ -60,6 +68,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public readonly int ContextFlags; // TODO: Enum
         private readonly uint _streamCount;
         private readonly AvStream** _streams;
+        private fixed byte _filename[1024];
         private readonly byte* _url;
         private readonly long _startTime;
         private readonly long _duration;
@@ -88,6 +97,8 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
     internal unsafe class AvFormatContext : IDisposable
     {
+        public ReadOnlySpan<AvStreamReference> Streams => _basePtr->Streams;
+
         private bool _isOpen;
         private AvFormatContextStruct* _basePtr;
         private readonly AvIoContext _context;
@@ -102,26 +113,17 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
         public AvError OpenInput(string url = "")
         {
-            var res = avformat_open_input(ref _basePtr, url, null, null);
-            if (res != AvError.Ok)
-                Dispose();
-            else
-                _isOpen = true;
+            fixed (byte* ptr = Encoding.UTF8.GetBytesNullTerminated(url))
+            {
+                var code = avformat_open_input(ref _basePtr, ptr, null, null);
+                if (code == AvError.Ok)
+                    _isOpen = true;
 
-            return res;
+                return code;
+            }
         }
 
         public AvError FindStreamInfo() => avformat_find_stream_info(_basePtr, null);
-
-        public void OpenCodecs()
-        {
-                foreach (var streamRef in _basePtr->Streams)
-                {
-                    ref readonly var stream = ref streamRef.Stream;
-                    var codec = avcodec_find_decoder(stream.Codec->CodecId);
-                    avcodec_open2(stream.Codec, codec, null);
-                }
-        }
 
         public IReadOnlyDictionary<string, string>[] GetStreamMetadata()
         {
@@ -139,10 +141,18 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
         public void Dispose()
         {
-            if (_basePtr != null && _isOpen)
+            if (_basePtr == null) return;
+
+            _context.Dispose();
+            _basePtr->AvIoContext = null;
+
+            if (_isOpen)
                 avformat_close_input(ref _basePtr);
-            else if (_basePtr != null)
-                avformat_free_context(ref _basePtr);
+            else
+            {
+                avformat_free_context(_basePtr);
+                _basePtr = null;
+            }
         }
 
         #region Native
@@ -175,7 +185,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 #else
         [DllImport("avformat")]
 #endif
-        private static extern AvError avformat_open_input(ref AvFormatContextStruct* context, [MarshalAs(UnmanagedType.LPStr)] string url, void* fmt, void* options);
+        private static extern AvError avformat_open_input(ref AvFormatContextStruct* context, byte* url, void* fmt, void* options);
 
 #if WIN32
         [DllImport("avformat-58")]
@@ -189,7 +199,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 #else
         [DllImport("avformat")]
 #endif
-        private static extern void avformat_free_context(ref AvFormatContextStruct* context);
+        private static extern void avformat_free_context(AvFormatContextStruct* context);
 
 #if WIN32
         [DllImport("avformat-58")]

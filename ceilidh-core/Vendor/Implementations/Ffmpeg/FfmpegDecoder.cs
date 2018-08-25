@@ -49,7 +49,6 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                     if (format.OpenInput() != AvError.Ok || format.FindStreamInfo() != AvError.Ok)
                     {
                         format.Dispose();
-                        io.Dispose();
                         return false;
                     }
 
@@ -67,6 +66,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                 }
                 catch
                 {
+                    io = null;
                     format?.Dispose();
                     throw;
                 }

@@ -10,7 +10,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
         private readonly void* _avClass;
         private readonly int _logLevelOffset;
-        public readonly int CodecType;
+        public readonly AvMediaType CodecType;
         public readonly AvCodec* Codec;
         public readonly int CodecId;
 

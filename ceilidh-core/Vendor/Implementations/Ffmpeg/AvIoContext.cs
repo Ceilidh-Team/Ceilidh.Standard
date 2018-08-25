@@ -132,7 +132,6 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         {
             if (_ownHandle)
             {
-
                 if (_buffer != null)
                     av_freep(ref _buffer);
                 if (_basePtr != null)
@@ -193,7 +192,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public override long Length => avio_size(_basePtr);
         public override long Position
         {
-            get => avio_tell(_basePtr);
+            get => avio_seek(_basePtr, 0, 1);
             set => throw new NotSupportedException();
         }
 
@@ -265,44 +264,37 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         private static extern void av_freep(ref byte* buffer);
 
 #if WIN32
-        [DllImport("avutil-56")]
+        [DllImport("avformat-58")]
 #else
-        [DllImport("avutil")]
+        [DllImport("avformat")]
 #endif
         private static extern void avio_write(AvIoContextStruct* s, byte* buf, int size);
-        
-#if WIN32
-        [DllImport("avutil-56")]
-#else
-        [DllImport("avutil")]
-#endif
-        private static extern long avio_seek(AvIoContextStruct* s, long offset, int whence);
-        
-#if WIN32
-        [DllImport("avutil-56")]
-#else
-        [DllImport("avutil")]
-#endif
-        private static extern int avio_read(AvIoContextStruct* s, void* buf, int size);
-        
-#if WIN32
-        [DllImport("avutil-56")]
-#else
-        [DllImport("avutil")]
-#endif
-        private static extern long avio_size(AvIoContextStruct* s);
-        
-#if WIN32
-        [DllImport("avutil-56")]
-#else
-        [DllImport("avutil")]
-#endif
-        private static extern long avio_tell(AvIoContextStruct* s);
 
 #if WIN32
-        [DllImport("avutil-56")]
+        [DllImport("avformat-58")]
 #else
-        [DllImport("avutil")]
+        [DllImport("avformat")]
+#endif
+        private static extern long avio_seek(AvIoContextStruct* s, long offset, int whence);
+
+#if WIN32
+        [DllImport("avformat-58")]
+#else
+        [DllImport("avformat")]
+#endif
+        private static extern int avio_read(AvIoContextStruct* s, void* buf, int size);
+
+#if WIN32
+        [DllImport("avformat-58")]
+#else
+        [DllImport("avformat")]
+#endif
+        private static extern long avio_size(AvIoContextStruct* s);
+
+#if WIN32
+        [DllImport("avformat-58")]
+#else
+        [DllImport("avformat")]
 #endif
         private static extern void avio_flush(AvIoContextStruct* s);
 
