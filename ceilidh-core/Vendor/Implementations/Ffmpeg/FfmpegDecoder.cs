@@ -31,7 +31,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             }
         }
 
-        public bool TryDecode(Stream source, out AudioData audioData)
+        public unsafe bool TryDecode(Stream source, out AudioData audioData)
         {
             audioData = null;
             if (!_supported) return false;
@@ -52,15 +52,8 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                         return false;
                     }
 
-                    var file = format.GetFileMetadata();
-                    foreach (var (key, value) in file)
-                        Console.WriteLine($"{key}: {value}");
-                    
-                    var data = format.GetStreamMetadata();
+                    new AvStreamAudioData(format, 0).CopyTo(File.OpenWrite("data.raw"));
 
-                    foreach (var stream in data)
-                    foreach (var (key, value) in stream)
-                        Console.WriteLine($"{key}: {value}");
 
                     return true;
                 }

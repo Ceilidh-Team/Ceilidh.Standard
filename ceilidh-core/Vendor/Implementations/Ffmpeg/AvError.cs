@@ -100,6 +100,19 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         HttpNotFound = -(0xF8 | ('4' << 8) | ('0' << 16) | ('4' << 24)),
         HttpOther4Xx = -(0xF8 | ('4' << 8) | ('X' << 16) | ('X' << 24)),
         HttpServerError = -(0xF8 | ('5' << 8) | ('X' << 16) | ('X' << 24)),
+
+        /// <summary>
+        /// Try again
+        /// </summary>
+        EAgain = -11,
+        /// <summary>
+        /// Out of memory
+        /// </summary>
+        ENoMem = -12,
+        /// <summary>
+        /// Invalid argument
+        /// </summary>
+        EInval = -22
     }
 
     internal static unsafe class AvErrorExtensions

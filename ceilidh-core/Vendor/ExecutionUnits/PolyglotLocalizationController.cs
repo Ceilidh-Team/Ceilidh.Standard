@@ -116,7 +116,7 @@ namespace Ceilidh.Core.Vendor.ExecutionUnits
         /// <returns>True if the value was integral and a good value is produced, false otherwise</returns>
         private static bool IsIntegral(object value, out decimal num)
         {
-            num = default(decimal);
+            num = default;
             if (value == null) return false;
 
             var typ = value.GetType();

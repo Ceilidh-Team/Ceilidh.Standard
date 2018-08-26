@@ -4,20 +4,20 @@ using System.Runtime.InteropServices;
 namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal readonly unsafe struct AvPacket
+    internal unsafe struct AvPacket
     {
-        public readonly void* Buffer;
-        public readonly long PresentationTimestamp;
-        public readonly long DecompressionTimestamp;
-        public readonly byte* Data;
-        public readonly int Size;
-        public readonly int StreamIndex;
-        public readonly int Flags;
-        public readonly void* SideData;
-        public readonly int SideDataElements;
-        public readonly long Duration;
-        public readonly long Position;
+        public void* Buffer;
+        public long PresentationTimestamp;
+        public long DecompressionTimestamp;
+        public byte* Data;
+        public int Size;
+        public int StreamIndex;
+        public int Flags;
+        public void* SideData;
+        public int SideDataElements;
+        public long Duration;
+        public long Position;
         [Obsolete]
-        public readonly long ConvergenceDuration;
+        public long ConvergenceDuration;
     }
 }

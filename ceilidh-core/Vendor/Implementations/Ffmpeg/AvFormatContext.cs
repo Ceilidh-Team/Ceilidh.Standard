@@ -111,6 +111,11 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             _basePtr->AvIoContext = ioContext;
         }
 
+        public ref AvFormatContextStruct GetPinnableReference()
+        {
+            return ref *_basePtr;
+        }
+
         public AvError OpenInput(string url = "")
         {
             fixed (byte* ptr = Encoding.UTF8.GetBytesNullTerminated(url))
@@ -158,20 +163,6 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         #region Native
 
 #pragma warning disable IDE1006
-
-#if WIN32
-        [DllImport("avcodec-58")]
-#else
-        [DllImport("avcodec")]
-#endif
-        private static extern int avcodec_open2(AvCodecContext* context, AvCodec* codec, AvDictionaryStruct** options);
-
-#if WIN32
-        [DllImport("avcodec-58")]
-#else
-        [DllImport("avcodec")]
-#endif
-        private static extern AvCodec* avcodec_find_decoder(int codecId);
             
 #if WIN32
         [DllImport("avformat-58")]

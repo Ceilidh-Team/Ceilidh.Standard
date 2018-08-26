@@ -7,7 +7,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
     internal unsafe class FfmpegAudioData : AudioData
     {
         public override IReadOnlyDictionary<string, string> Metadata =>
-            _selectedStream < 0 ? null : _streams[_selectedStream]->Metadata;
+            _selectedStream < 0 ? null : _streams[_selectedStream]->Metadata ?? _formatContext.GetFileMetadata();
         public override int StreamCount => _streams.Length;
         public override int SelectedStream => _selectedStream;
 
@@ -26,7 +26,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             var i = 0;
             foreach (ref readonly var formatStream in format.Streams)
             {
-                if (formatStream.Stream.Codec->CodecType == AvMediaType.Audio)
+                if (formatStream.Stream.CodecPar->CodecType == AvMediaType.Audio)
                     fixed (AvStream* streamPtr = &formatStream.Stream)
                         _streams[i++] = streamPtr;
             }
@@ -49,7 +49,6 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public override void Dispose()
         {
             _formatContext.Dispose();
-            _ioContext.Dispose();
         }
     }
 }
