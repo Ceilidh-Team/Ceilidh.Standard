@@ -106,6 +106,8 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public int SampleRate;
         public int Channels;
         public AvSampleFormat SampleFormat;
+        public int FrameSize;
+        public int FrameNumber;
 
 #pragma warning restore 169
 #pragma warning restore 649

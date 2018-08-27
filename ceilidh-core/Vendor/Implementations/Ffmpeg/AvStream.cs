@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using Ceilidh.Core.Util;
 using Ceilidh.Core.Vendor.Contracts;
 
 namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
@@ -12,10 +13,10 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public AvDictionary Metadata => _metadata == null ? null : new AvDictionary(_metadata, false);
         public TimeSpan StartTime
         {
-            get => TimeSpan.FromSeconds((double) _timeBase * _startTime);
-            set => _startTime = (long) (value.TotalSeconds / (double) _timeBase);
+            get => TimeSpan.FromSeconds((double) TimeBase * _startTime);
+            set => _startTime = (long) (value.TotalSeconds / (double) TimeBase);
         }
-        public TimeSpan Duration => TimeSpan.FromSeconds((double)_timeBase * _duration);
+        public TimeSpan Duration => TimeSpan.FromSeconds((double)TimeBase * _duration);
 
 #pragma warning disable 169
 #pragma warning disable 649
@@ -25,7 +26,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         [Obsolete]
         public readonly AvCodecContext* Codec;
         private readonly void* _privateData;
-        private readonly AvRational _timeBase;
+        public readonly AvRational TimeBase;
         private long _startTime;
         private readonly long _duration;
         public readonly long FrameCount;
@@ -48,19 +49,19 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
     internal unsafe class AvStreamAudioData : AudioStream
     {
-        public override bool CanSeek { get; }
-        public override long Length { get; }
-        public override long Position { get; set; }
-        public override AudioFormat Format { get; }
+        public override bool CanSeek => _formatContext.CanSeek;
 
-        private int _extraPtr = 0;
+        public override long Position { get; set; }
+        public override AudioFormat Format => new AudioFormat(_codecContext->SampleRate, _codecContext->Channels, _codecContext->SampleFormat.BytesPerSample(), AudioDataFormat.S8); // TODO: Real data format
+        public override long TotalSamples => (long) (_stream->Duration.TotalSeconds * _codecContext->SampleRate);
+
+        private int _extraPtr;
         private byte[] _extraData;
 
         private readonly AvFormatContext _formatContext;
         private readonly AvStream* _stream;
-        private readonly AvCodec* _codec;
-        private readonly AvCodecContext* _codecContext;
-        private readonly AvFrame* _frame;
+        private AvCodecContext* _codecContext;
+        private AvFrame* _frame;
         
         public AvStreamAudioData(AvFormatContext formatContext, int streamIdx)
         {
@@ -69,9 +70,18 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             fixed (AvStream* stream = &formatContext.Streams[streamIdx].Stream)
                 _stream = stream;
 
-            _codec = avcodec_find_decoder(_stream->CodecPar->CodecId);
-            _codecContext = avcodec_alloc_context3(_codec);
-            var code = avcodec_parameters_to_context(_codecContext, _stream->CodecPar);
+            var codec = avcodec_find_decoder(_stream->CodecPar->CodecId);
+
+            if (codec == null)
+                throw new LocalizedException(new InvalidDataException("ffmpeg.error.unsupported_codec"));
+
+            _codecContext = avcodec_alloc_context3(codec);
+
+            if (_codecContext == null)
+                throw new LocalizedException(new Exception("ffmpeg.error.unknown"), nameof(avcodec_alloc_context3));
+
+            if(avcodec_parameters_to_context(_codecContext, _stream->CodecPar) != AvError.Ok)
+                throw new LocalizedException(new Exception("ffmpeg.error.unknown"), nameof(avcodec_parameters_to_context));
 
             var dict = new AvDictionary(new Dictionary<string, string>
             {
@@ -79,10 +89,13 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             });
 
             fixed (AvDictionaryStruct* ptr = dict)
-                if (avcodec_open2(_codecContext, _codec, &ptr) != AvError.Ok)
-                    throw new Exception("");
+                if (avcodec_open2(_codecContext, codec, &ptr) != AvError.Ok)
+                    throw new LocalizedException(new Exception("ffmpeg.error.unknown"), nameof(avcodec_open2));
 
             _frame = av_frame_alloc();
+
+            if (_frame == null)
+                throw new LocalizedException(new Exception("ffmpeg.error.unknown"), nameof(av_frame_alloc));
         }
 
         public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
@@ -117,7 +130,13 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 
                     fixed (AvFormatContextStruct* format = _formatContext)
                     {
-                        var code = av_read_frame(format, ref packet); // TODO: EOF
+                        switch (av_read_frame(format, ref packet))
+                        {
+                            case AvError.Eof:
+                                return 0;
+                            case var code when code < 0:
+                                throw new LocalizedException(new Exception("ffmpeg.error.averror"), nameof(av_read_frame), code);
+                        }
                     }
 
                     if (packet.StreamIndex == _stream->Index)
@@ -125,9 +144,9 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                         switch (avcodec_send_packet(_codecContext, ref packet))
                         {
                             case AvError.EAgain:
-                                throw new Exception("Recieved more data before being able to send - this should not happen");
-                            case var err when err < 0:
-                                throw new Exception($"FFmpeg error code: {err}");
+                                throw new IOException();
+                            case var code when code < 0:
+                                throw new LocalizedException(new Exception("ffmpeg.error.averror"), nameof(avcodec_send_packet), code);
                         }
                     }
                 }
@@ -143,14 +162,14 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                     return 0;
                 case AvError.EInval:
                     throw new ObjectDisposedException(nameof(AvCodec));
-                case var err when err < 0: // Generic error
-                    throw new Exception($"FFmpeg error code: {err}");
+                case var code when code < 0:
+                    throw new LocalizedException(new Exception("ffmpeg.error.averror"), nameof(avcodec_receive_frame), code);
                 default:
-                    var backing = av_frame_clone(_frame);
+                    // Console.WriteLine(_codecContext->FrameNumber);
 
-                    var bps = backing->Format.BytesPerSample();
+                    var bps = _frame->Format.BytesPerSample();
 
-                    if (backing->Format.IsPlanar() && _codecContext->Channels > 1) // Planar = non-interleaved, so we have to adjust it first. Only one channel is equivalent to non-planar
+                    if (_frame->Format.IsPlanar() && _codecContext->Channels > 1) // Planar = non-interleaved, so we have to adjust it first. Only one channel is equivalent to interleaved
                     {
                         ulong mask;
                         switch (bps)
@@ -170,12 +189,12 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                             default: throw new ArgumentOutOfRangeException();
                         }
 
-                        var tmpBuf = new byte[backing->SampleCount * bps * _codecContext->Channels];
+                        var tmpBuf = new byte[_frame->SampleCount * bps * _codecContext->Channels];
                         fixed (byte* tmpPtr = tmpBuf)
                         {
                             for (var i = 0; i < _codecContext->Channels; i++)
-                                for(var j = 0; j < backing->SampleCount * bps; j += bps)
-                                    *(ulong*) (tmpPtr + i * bps + j * _codecContext->Channels) |= mask & *(ulong*)(backing->ExtendedData[i] + j);
+                                for(var j = 0; j < _frame->SampleCount * bps; j += bps)
+                                    *(ulong*) (tmpPtr + i * bps + j * _codecContext->Channels) |= mask & *(ulong*)(_frame->ExtendedData[i] + j);
 
                             fixed (byte* bufPtr = buffer)
                             {
@@ -194,14 +213,14 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                     {
                         fixed (byte* bufPtr = buffer)
                         {
-                            var extLen = backing->SampleCount * bps;
+                            var extLen = _frame->SampleCount * bps;
 
                             var readLen = Math.Min(extLen, buffer.Length);
-                            Buffer.MemoryCopy(backing->ExtendedData[0], bufPtr, buffer.Length, readLen);
+                            Buffer.MemoryCopy(_frame->ExtendedData[0], bufPtr, buffer.Length, readLen);
 
                             if (readLen == buffer.Length && readLen != extLen)
                                 fixed (byte* extraPtr = _extraData = new byte[extLen - readLen])
-                                    Buffer.MemoryCopy(backing->ExtendedData[0] + readLen, extraPtr, extLen - readLen, extLen - readLen);
+                                    Buffer.MemoryCopy(_frame->ExtendedData[0] + readLen, extraPtr, extLen - readLen, extLen - readLen);
 
                             return readLen;
                         }
@@ -209,14 +228,25 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             }
         }
 
-        public override long Seek(long offset, SeekOrigin origin)
+        public override void Seek(TimeSpan offset)
         {
-            throw new NotImplementedException();
+            fixed (AvFormatContextStruct* fCtx = _formatContext)
+            {
+                var ts = (long) (offset.TotalSeconds * (double) _stream->TimeBase);
+
+                if(avformat_seek_file(fCtx, _stream->Index, 0, ts, ts, AvSeekFlag.Any) < 0)
+                    throw new LocalizedException(new Exception("ffmpeg.error.unknown"), nameof(avformat_seek_file));
+                avcodec_flush_buffers(_codecContext);
+            }
         }
 
-        public override void SetLength(long value)
+        protected override void Dispose(bool disposing)
         {
-            throw new NotImplementedException();
+            if (_frame != null)
+                av_frame_free(ref _frame);
+            if (_codecContext != null)
+                avcodec_free_context(ref _codecContext);
+            _formatContext.Dispose(); // TODO: This causes a crash for unknown reasons
         }
 
         #region Native
@@ -230,6 +260,14 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             int relatedStream, ref AvCodec* decoder, int flags);
 
 #if WIN32
+        [DllImport("avformat-58")]
+#else
+        [DllImport("avformat")]
+#endif
+        private static extern AvError avformat_seek_file(AvFormatContextStruct* s, int streamIndex, long minTs, long ts,
+            long maxTs, AvSeekFlag flags);
+
+#if WIN32
         [DllImport("avutil-56")]
 #else
         [DllImport("avutil")]
@@ -241,7 +279,14 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 #else
         [DllImport("avutil")]
 #endif
-        private static extern AvFrame* av_frame_clone(AvFrame* frame);
+        private static extern void av_frame_free(ref AvFrame* frame);
+
+#if WIN32
+        [DllImport("avcodec-58")]
+#else
+        [DllImport("avcodec")]
+#endif
+        private static extern void avcodec_free_context(ref AvCodecContext* context);
 
 #if WIN32
         [DllImport("avcodec-58")]
@@ -256,6 +301,13 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         [DllImport("avformat")]
 #endif
         private static extern AvError av_read_frame(AvFormatContextStruct* s, ref AvPacket pkt);
+
+#if WIN32
+        [DllImport("avcodec-58")]
+#else
+        [DllImport("avcodec")]
+#endif
+        private static extern void avcodec_flush_buffers(AvCodecContext* avctx);
 
 #if WIN32
         [DllImport("avcodec-58")]

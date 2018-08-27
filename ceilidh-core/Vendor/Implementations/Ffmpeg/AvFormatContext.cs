@@ -99,6 +99,8 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
     {
         public ReadOnlySpan<AvStreamReference> Streams => _basePtr->Streams;
 
+        public bool CanSeek => _context.CanSeek;
+
         private bool _isOpen;
         private AvFormatContextStruct* _basePtr;
         private readonly AvIoContext _context;

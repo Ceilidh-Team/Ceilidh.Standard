@@ -5,6 +5,7 @@ using System.Threading;
 using Ceilidh.Core.Config;
 using Ceilidh.Core.Plugin;
 using Ceilidh.Core.Plugin.Archive;
+using Ceilidh.Core.Util;
 using Ceilidh.Core.Vendor.Contracts;
 using CommandLine;
 
@@ -19,6 +20,8 @@ namespace Ceilidh.Core
             PlatformID.Unix;
 
 #endif
+
+        public static PluginImplementationMap Implementations { get; private set; }
 
         public static void Main(string[] args)
         {
@@ -56,8 +59,8 @@ namespace Ceilidh.Core
                 foreach (var installedPlugin in arch.InstalledPlugins())
                     loader.QueueLoad(installedPlugin);
 
-                var impl = loader.Execute(config.ExcludeClass);
-                if (impl.TryGetSingleton<ILocalizationController>(out var single))
+                Implementations = loader.Execute(config.ExcludeClass);
+                if (Implementations.TryGetSingleton<ILocalizationController>(out var single))
                     Console.WriteLine(single.Translate("Hello", "Ceilidh"));
 
                 Console.ReadLine();

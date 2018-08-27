@@ -46,6 +46,10 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             set => _direct = value ? 1 : 0;
         }
 
+        public bool CanSeek => _seek != IntPtr.Zero;
+        public bool CanWrite => _writePacket != IntPtr.Zero;
+        public bool CanRead => _readPacket != IntPtr.Zero;
+
 #pragma warning disable 169
 #pragma warning disable 649
 
@@ -138,8 +142,10 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                     avio_context_free(ref _basePtr);
             }
 
-            if (_streamHandle.IsAllocated)
-                _streamHandle.Free();
+            if (!_streamHandle.IsAllocated) return;
+
+            ((Stream) _streamHandle.Target).Dispose();
+            _streamHandle.Free();
         }
 
         public override void Flush()
@@ -186,9 +192,9 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                 avio_write(_basePtr, ptr, buffer.Length);
         }
 
-        public override bool CanRead => true;
-        public override bool CanSeek => true;
-        public override bool CanWrite => true;
+        public override bool CanRead => _basePtr->CanRead;
+        public override bool CanSeek => _basePtr->CanSeek;
+        public override bool CanWrite => _basePtr->CanWrite;
         public override long Length => avio_size(_basePtr);
         public override long Position
         {

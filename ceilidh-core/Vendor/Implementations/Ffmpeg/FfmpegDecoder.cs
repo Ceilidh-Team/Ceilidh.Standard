@@ -52,7 +52,11 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                         return false;
                     }
 
-                    new AvStreamAudioData(format, 0).CopyTo(File.OpenWrite("data.raw"));
+                    using (var data = new AvStreamAudioData(format, 0))
+                    using (var file = File.OpenWrite("data.raw"))
+                    {
+                        data.CopyTo(file);
+                    }
 
 
                     return true;
