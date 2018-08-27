@@ -8,7 +8,5 @@ namespace Ceilidh.Core.Util
         internal static ILocalizationController LocalizationController;
 
         public LocalizedException(Exception innerException, params object[] args) : base(LocalizationController.Translate(innerException.Message, args), innerException) {}
-
-        public override string ToString() => InnerException.ToString();
     }
 }

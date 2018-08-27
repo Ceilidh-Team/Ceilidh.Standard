@@ -16,19 +16,20 @@ namespace Ceilidh.Core
         public const PlatformID BUILD_PLATFORM =
 #if WIN32
             PlatformID.Win32NT;
+#elif OSX
+            PlatformID.MacOSX;
 #else
             PlatformID.Unix;
-
 #endif
-
-        public static PluginImplementationMap Implementations { get; private set; }
 
         public static void Main(string[] args)
         {
 #if WIN32
             if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+#elif OSX
+            if (Environment.OSVersion.Platform != PlatformID.MacOSX)
 #else
-            if (Environment.OSVersion.Platform != PlatformID.MacOSX && Environment.OSVersion.Platform != PlatformID.Unix)
+            if (Environment.OSVersion.Platform != PlatformID.Unix)
 #endif
                 throw new PlatformNotSupportedException($@"This binary was built for ""{BUILD_PLATFORM}"", but the current platform is ""{Environment.OSVersion.Platform}.""");
 
@@ -59,9 +60,12 @@ namespace Ceilidh.Core
                 foreach (var installedPlugin in arch.InstalledPlugins())
                     loader.QueueLoad(installedPlugin);
 
-                Implementations = loader.Execute(config.ExcludeClass);
-                if (Implementations.TryGetSingleton<ILocalizationController>(out var single))
-                    Console.WriteLine(single.Translate("Hello", "Ceilidh"));
+                var impl = loader.Execute(config.ExcludeClass);
+                if (!impl.TryGetSingleton<ILocalizationController>(out var loc))
+                    throw new Exception("Cannot load the localization controller: this is required.");
+
+                LocalizedException.LocalizationController = loc;
+                Console.WriteLine(loc.Translate("Hello", "Ceilidh"));
 
                 Console.ReadLine();
             });

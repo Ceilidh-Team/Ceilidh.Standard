@@ -104,7 +104,11 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         /// <summary>
         /// Try again
         /// </summary>
+        #if OSX
+        EAgain = -35,
+        #else
         EAgain = -11,
+        #endif
         /// <summary>
         /// Out of memory
         /// </summary>
