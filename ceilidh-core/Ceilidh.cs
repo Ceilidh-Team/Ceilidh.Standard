@@ -14,25 +14,19 @@ namespace Ceilidh.Core
 {
     internal static class Ceilidh
     {
-        public const PlatformID BUILD_PLATFORM =
+        public static readonly OSPlatform BuildPlatform =
 #if WIN32
-            PlatformID.Win32NT;
+            OSPlatform.Windows;
 #elif OSX
-            PlatformID.MacOSX;
+            OSPlatform.OSX;
 #else
-            PlatformID.Unix;
+            OSPlatform.Linux;
 #endif
 
         public static void Main(string[] args)
         {
-#if WIN32
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-#elif OSX
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-#else
-            if (Environment.OSVersion.Platform != PlatformID.Unix)
-#endif
-                throw new PlatformNotSupportedException($@"This binary was built for ""{BUILD_PLATFORM}"", but the current platform is ""{Environment.OSVersion.Platform}.""");
+            if (!RuntimeInformation.IsOSPlatform(BuildPlatform))
+                throw new PlatformNotSupportedException($@"This binary was built for ""{BuildPlatform}"", which is incompatible with the current platform.");
 
             Parser.Default.ParseArguments<CeilidhArguments>(args).WithParsed(x =>
             {
