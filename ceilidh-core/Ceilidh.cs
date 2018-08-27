@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Ceilidh.Core.Config;
 using Ceilidh.Core.Plugin;
@@ -27,7 +28,7 @@ namespace Ceilidh.Core
 #if WIN32
             if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 #elif OSX
-            if (Environment.OSVersion.Platform != PlatformID.MacOSX)
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 #else
             if (Environment.OSVersion.Platform != PlatformID.Unix)
 #endif
