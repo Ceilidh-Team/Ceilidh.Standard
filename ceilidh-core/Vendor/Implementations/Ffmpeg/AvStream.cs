@@ -148,37 +148,34 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                 default:
                     var backing = av_frame_clone(_frame);
 
-                    if (backing->Format.IsPlanar()) // Planar = non-interleaved, so we have to adjust it first
-                    {
-                        var bps = backing->Format.BytesPerSample();
+                    var bps = backing->Format.BytesPerSample();
 
-                        var tmpBuf = new byte[backing->LineSize[0] * _codecContext->Channels];
+                    if (backing->Format.IsPlanar() && _codecContext->Channels > 1) // Planar = non-interleaved, so we have to adjust it first. Only one channel is equivalent to non-planar
+                    {
+                        ulong mask;
+                        switch (bps)
+                        {
+                            case 1:
+                                mask = 0xFFL;
+                                break;
+                            case 2:
+                                mask = 0xFFFFL;
+                                break;
+                            case 4:
+                                mask = 0xFFFFFFFFL;
+                                break;
+                            case 8:
+                                mask = 0xFFFFFFFFFFFFFFFFL;
+                                break;
+                            default: throw new ArgumentOutOfRangeException();
+                        }
+
+                        var tmpBuf = new byte[backing->SampleCount * bps * _codecContext->Channels];
                         fixed (byte* tmpPtr = tmpBuf)
                         {
                             for (var i = 0; i < _codecContext->Channels; i++)
-                            {
-                                ulong mask;
-                                switch (bps)
-                                {
-                                    case 1:
-                                        mask = 0xFFL;
-                                        break;
-                                    case 2:
-                                        mask = 0xFFFFL;
-                                        break;
-                                    case 4:
-                                        mask = 0xFFFFFFFFL;
-                                        break;
-                                    case 8:
-                                        mask = 0xFFFFFFFFFFFFFFFFL;
-                                        break;
-                                    default: throw new ArgumentOutOfRangeException();
-                                }
-
-                                
-                                for (var j = 0; j < backing->LineSize[0]; j += bps)
-                                    *(ulong*) (tmpPtr + i * bps + j * bps * _codecContext->Channels) |= mask & *(ulong*)(backing->ExtendedData[i] + j);
-                            }
+                                for(var j = 0; j < backing->SampleCount * bps; j += bps)
+                                    *(ulong*) (tmpPtr + i * bps + j * _codecContext->Channels) |= mask & *(ulong*)(backing->ExtendedData[i] + j);
 
                             fixed (byte* bufPtr = buffer)
                             {
@@ -197,12 +194,14 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                     {
                         fixed (byte* bufPtr = buffer)
                         {
-                            var readLen = Math.Min(backing->LineSize[0], buffer.Length);
+                            var extLen = backing->SampleCount * bps;
+
+                            var readLen = Math.Min(extLen, buffer.Length);
                             Buffer.MemoryCopy(backing->ExtendedData[0], bufPtr, buffer.Length, readLen);
 
-                            if (readLen == buffer.Length && readLen != backing->LineSize[0])
-                                fixed (byte* extraPtr = _extraData = new byte[backing->LineSize[0] - readLen])
-                                    Buffer.MemoryCopy(backing->ExtendedData[0] + readLen, extraPtr, backing->LineSize[0] - readLen, backing->LineSize[0] - readLen);
+                            if (readLen == buffer.Length && readLen != extLen)
+                                fixed (byte* extraPtr = _extraData = new byte[extLen - readLen])
+                                    Buffer.MemoryCopy(backing->ExtendedData[0] + readLen, extraPtr, extLen - readLen, extLen - readLen);
 
                             return readLen;
                         }
