@@ -24,7 +24,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public readonly int Index;
         public readonly int Id;
         [Obsolete]
-        public readonly AvCodecContext* Codec;
+        public AvCodecContext* Codec;
         private readonly void* _privateData;
         public readonly AvRational TimeBase;
         private long _startTime;
@@ -47,7 +47,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
 #pragma warning restore 649
     }
 
-    internal unsafe class AvStreamAudioData : AudioStream
+    internal unsafe class AvStreamAudioStream : AudioStream
     {
         public override bool CanSeek => _formatContext.CanSeek;
 
@@ -63,12 +63,11 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         private AvCodecContext* _codecContext;
         private AvFrame* _frame;
         
-        public AvStreamAudioData(AvFormatContext formatContext, int streamIdx)
+        public AvStreamAudioStream(AvFormatContext formatContext, AvStream* stream)
         {
             _formatContext = formatContext;
 
-            fixed (AvStream* stream = &formatContext.Streams[streamIdx].Stream)
-                _stream = stream;
+            _stream = stream;
 
             var codec = avcodec_find_decoder(_stream->CodecPar->CodecId);
 
@@ -83,12 +82,10 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             if(avcodec_parameters_to_context(_codecContext, _stream->CodecPar) != AvError.Ok)
                 throw new LocalizedException(new Exception("ffmpeg.error.unknown"), nameof(avcodec_parameters_to_context));
 
-            var dict = new AvDictionary(new Dictionary<string, string>
+            fixed (AvDictionaryStruct* ptr = new AvDictionary(new Dictionary<string, string>
             {
                 ["refcounted_frames"] = "1"
-            });
-
-            fixed (AvDictionaryStruct* ptr = dict)
+            }))
                 if (avcodec_open2(_codecContext, codec, &ptr) != AvError.Ok)
                     throw new LocalizedException(new Exception("ffmpeg.error.unknown"), nameof(avcodec_open2));
 
@@ -167,6 +164,9 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                 default:
                     // Console.WriteLine(_codecContext->FrameNumber);
 
+                    var time = TimeSpan.FromSeconds(_frame->PresentationTimeStamp * (double) _codecContext->TimeBase);
+                    Console.WriteLine(time);
+                    
                     var bps = _frame->Format.BytesPerSample();
 
                     if (_frame->Format.IsPlanar() && _codecContext->Channels > 1) // Planar = non-interleaved, so we have to adjust it first. Only one channel is equivalent to interleaved
@@ -246,7 +246,8 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                 av_frame_free(ref _frame);
             if (_codecContext != null)
                 avcodec_free_context(ref _codecContext);
-            _formatContext.Dispose(); // TODO: This causes a crash for unknown reasons
+
+            _stream->Codec = null;
         }
 
         #region Native

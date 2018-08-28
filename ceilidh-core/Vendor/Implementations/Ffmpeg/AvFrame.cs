@@ -17,5 +17,9 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
         public int Width, Height;
         public int SampleCount;
         public AvSampleFormat Format;
+        public int KeyFrame;
+        public int PictType;
+        public AvRational SampleActiveRatio;
+        public long PresentationTimeStamp;
     }
 }

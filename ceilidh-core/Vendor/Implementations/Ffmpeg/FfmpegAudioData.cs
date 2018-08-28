@@ -28,7 +28,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             {
                 if (formatStream.Stream.CodecPar->CodecType == AvMediaType.Audio)
                     fixed (AvStream* streamPtr = &formatStream.Stream)
-                        _streams[i++] = streamPtr;
+                        tmp[i++] = streamPtr;
             }
 
             _streams = new AvStream*[i];
@@ -44,7 +44,7 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             return true;
         }
 
-        public override AudioStream GetAudioStream() => throw new NotImplementedException();
+        public override AudioStream GetAudioStream() => new AvStreamAudioStream(_formatContext, _streams[_selectedStream]);
 
         public override void Dispose()
         {

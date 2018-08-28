@@ -17,21 +17,32 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
             {
                 AvFormatContext.RegisterAllFormats();
 
-                Console.WriteLine(_localization.Translate("libav.util.version", FfmpegVersion.AvUtilVersion));
-                Console.WriteLine(_localization.Translate("libav.format.version", FfmpegVersion.AvFormatVersion));
-                Console.WriteLine(_localization.Translate("libav.codec.version", FfmpegVersion.AvCodecVersion));
+                Console.WriteLine(_localization.Translate("ffmpeg.util.version", FfmpegVersion.AvUtilVersion));
+                Console.WriteLine(_localization.Translate("ffmpeg.format.version", FfmpegVersion.AvFormatVersion));
+                Console.WriteLine(_localization.Translate("ffmpeg.codec.version", FfmpegVersion.AvCodecVersion));
 
                 _supported = true;
+
+                /*if (TryDecode(File.OpenRead("/Users/olivia/Downloads/A Beautiful Song.ogg"), out var data))
+                    using(data)
+                    {
+                        data.TrySelectStream(0);
+                        using (var audio = data.GetAudioStream())
+                        using (var file = File.OpenWrite("data.raw"))
+                        {
+                            audio.CopyTo(file);
+                        }
+                    }*/
             }
             catch(TypeLoadException)
             {
-                Console.WriteLine(_localization.Translate("libav.disabled"));
+                Console.WriteLine(_localization.Translate("ffmpeg.disabled"));
 
                 _supported = false;
             }
         }
 
-        public unsafe bool TryDecode(Stream source, out AudioData audioData)
+        public bool TryDecode(Stream source, out AudioData audioData)
         {
             audioData = null;
             if (!_supported) return false;
@@ -52,13 +63,10 @@ namespace Ceilidh.Core.Vendor.Implementations.Ffmpeg
                         return false;
                     }
 
-                    using (var data = new AvStreamAudioData(format, 0))
-                    using (var file = File.OpenWrite("data.raw"))
-                    {
-                        data.CopyTo(file);
-                    }
-
-
+                    audioData = new FfmpegAudioData(io, format);
+                    io = null;
+                    format = null;
+                    
                     return true;
                 }
                 catch
