@@ -65,8 +65,9 @@ namespace Ceilidh.Core.Plugin
 
                     // Locate every execution unit in the assembly
                     foreach (var exUnit in asm.GetExportedTypes()
-                        .Where(x => x.GetCustomAttribute<ExecutionUnitAttribute>() != null ||
-                                    x.GetInterfaces().Any(y => y.GetCustomAttribute<ContractAttribute>() != null))
+                        .Where(x => (x.GetCustomAttribute<ExecutionUnitAttribute>() != null
+                                    || x.GetInterfaces().Any(y => y.GetCustomAttribute<ContractAttribute>() != null))
+                                    && (x.GetCustomAttribute<ExecutionUnitAttribute>()?.SupportedPlatforms?.Contains(Environment.OSVersion.Platform) ?? true))
                         .Where(x => !exclude.Contains(x.FullName)))
                         executionUnits.Add(exUnit);
                 }
@@ -82,7 +83,17 @@ namespace Ceilidh.Core.Plugin
                     .Select(x => new KeyValuePair<Type, List<object>>(x, new List<object>())));
 
                 foreach (var o in _transientObjects)
-                    instances.Add(o.GetType(), new List<object>{o});
+                {
+                    instances.Add(o.GetType(), new List<object> {o});
+
+                    foreach (var impl in o.GetType().GetInterfaces().Where(x => x.GetCustomAttribute<ContractAttribute>() != null))
+                    {
+                        if (instances.TryGetValue(impl, out var l))
+                            l.Add(o);
+                        else
+                            instances.Add(impl, new List<object> {o});
+                    }
+                }
 
                 // Iterate over the execution units after sorted topologically (no dependencies first)
                 foreach (var exUnit in graph.TopologicalSort())

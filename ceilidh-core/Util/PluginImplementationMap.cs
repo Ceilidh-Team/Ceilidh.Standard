@@ -15,7 +15,7 @@ namespace Ceilidh.Core.Util
 
         public bool TryGetSingleton<TContract>(out TContract single)
         {
-            single = default(TContract);
+            single = default;
 
             if (!_impl.TryGetValue(typeof(TContract), out var values)) return false;
 
@@ -27,7 +27,7 @@ namespace Ceilidh.Core.Util
 
         public bool TryGetImplementations<TContract>(out List<TContract> impl)
         {
-            impl = default(List<TContract>);
+            impl = default;
 
             if (!_impl.TryGetValue(typeof(TContract), out var list)) return false;
 

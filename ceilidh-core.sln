@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ceilidh-core", "ceilidh-core\ceilidh-core.csproj", "{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ceilidh-core-tests", "ceilidh-core-tests\ceilidh-core-tests.csproj", "{1659D551-4550-4035-AB3A-5EC97841E1D7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ceilidh-core-tests", "ceilidh-core-tests\ceilidh-core-tests.csproj", "{1659D551-4550-4035-AB3A-5EC97841E1D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

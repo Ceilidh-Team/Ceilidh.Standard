@@ -1,11 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RootNamespace>Ceilidh.Core</RootNamespace>
     <StartupObject>Ceilidh.Core.Ceilidh</StartupObject>
-    
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
@@ -13,26 +11,97 @@
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-
     <Deterministic>false</Deterministic>
-
     <Authors>Ceilidh</Authors>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
+  <Choose>
+    <When Condition="'$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'win-x64'">
+      <PropertyGroup>
+        <OS>Windows_NT</OS>
+      </PropertyGroup>
+      <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x86'">
+        <Platform>x86</Platform>
+      </PropertyGroup>
+      <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+        <Platform>x64</Platform>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
+      <PropertyGroup>
+        <OS>Unix</OS>
+        <Platform>x64</Platform>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
+      <PropertyGroup>
+        <OS>OSX</OS>
+        <Platform>x64</Platform>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">
+        <OS>OSX</OS>
+        <Platform>x64</Platform>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <Choose>
+    <When Condition="'$(Configuration)' == 'Debug'">
+      <PropertyGroup>
+        <DefineDebug />
+        <DefineTrace />
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(Configuration)' == 'Release'">
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="'$(OS)' == 'Windows_NT'">
+      <PropertyGroup>
+        <DefineConstants>WIN32;$(DefineConstants)</DefineConstants>
+      </PropertyGroup>
+      <ItemGroup>
+        <None Update="avcodec-58.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="avdevice-58.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="avfilter-7.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="avformat-58.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="avutil-56.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="postproc-55.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="swresample-3.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="swscale-5.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+      </ItemGroup>
+    </When>
+    <When Condition="'$(OS)' == 'Unix'">
+      <PropertyGroup>
+        <DefineConstants>LINUX;UNIX;$(DefineConstants)</DefineConstants>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OS)' == 'OSX'">
+      <PropertyGroup>
+        <DefineConstants>OSX;UNIX;$(DefineConstants)</DefineConstants>
+      </PropertyGroup>
+    </When>
+  </Choose>
   <ItemGroup>
-    <None Remove="Vendor\Implementations\FilesystemLibraryProvider.cs~RF3eddcf.TMP" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.2.1" />
+    <PackageReference Include="CommandLineParser" Version="2.3.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
   </ItemGroup>
 </Project>
