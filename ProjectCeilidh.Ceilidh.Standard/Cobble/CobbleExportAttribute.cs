@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ProjectCeildih.Ceilidh.Standard.Cobble
+namespace ProjectCeilidh.Ceilidh.Standard.Cobble
 {
     [AttributeUsage(AttributeTargets.Class)]
     internal class CobbleExportAttribute : Attribute

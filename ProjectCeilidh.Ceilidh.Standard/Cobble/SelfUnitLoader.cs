@@ -2,7 +2,7 @@
 using System.Reflection;
 using ProjectCeilidh.Cobble;
 
-namespace ProjectCeildih.Ceilidh.Standard.Cobble
+namespace ProjectCeilidh.Ceilidh.Standard.Cobble
 {
     public class SelfUnitLoader : IUnitLoader
     {
@@ -15,6 +15,9 @@ namespace ProjectCeildih.Ceilidh.Standard.Cobble
 
         public void RegisterUnits(CobbleContext context)
         {
+            context.DuplicateResolver =
+                       (pattern, implementations) => implementations.Single(x => x.GetType().Assembly != typeof(IUnitLoader).Assembly);
+
             context.AddUnmanaged(_startOptions);
 
             foreach (var exp in typeof(IUnitLoader).Assembly.GetExportedTypes()

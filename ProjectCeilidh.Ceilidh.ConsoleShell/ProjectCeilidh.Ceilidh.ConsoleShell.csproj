@@ -10,7 +10,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ProjectCeildih.Ceilidh.Standard\ProjectCeildih.Ceilidh.Standard.csproj" />
+    <ProjectReference Include="..\ProjectCeilidh.Ceilidh.Standard\ProjectCeilidh.Ceilidh.Standard.csproj" />
   </ItemGroup>
-
 </Project>

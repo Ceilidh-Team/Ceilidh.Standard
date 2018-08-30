@@ -8,4 +8,8 @@
     <PackageReference Include="ProjectCeilidh.Cobble" Version="1.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Plugin\" />
+    <Folder Include="Config\" />
+  </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 ﻿using System;
-using ProjectCeildih.Ceilidh.Standard.Cobble;
+using ProjectCeilidh.Ceilidh.Standard.Cobble;
 
-namespace ProjectCeildih.Ceilidh.Standard
+namespace ProjectCeilidh.Ceilidh.Standard
 {
     [CobbleExport]
     public class HelloWorld

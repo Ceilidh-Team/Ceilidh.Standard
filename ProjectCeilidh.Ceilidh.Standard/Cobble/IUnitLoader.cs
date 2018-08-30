@@ -1,6 +1,6 @@
 ﻿using ProjectCeilidh.Cobble;
 
-namespace ProjectCeildih.Ceilidh.Standard.Cobble
+namespace ProjectCeilidh.Ceilidh.Standard.Cobble
 {
     public interface IUnitLoader
     {

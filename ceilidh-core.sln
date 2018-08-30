@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ceilidh-core", "ceilidh-core\ceilidh-core.csproj", "{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ceilidh-core", "ceilidh-core\ceilidh-core.csproj", "{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ceilidh-core-tests", "ceilidh-core-tests\ceilidh-core-tests.csproj", "{1659D551-4550-4035-AB3A-5EC97841E1D7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ceilidh-core-tests", "ceilidh-core-tests\ceilidh-core-tests.csproj", "{1659D551-4550-4035-AB3A-5EC97841E1D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectCeildih.Ceilidh.Standard", "ProjectCeildih.Ceilidh.Standard\ProjectCeildih.Ceilidh.Standard.csproj", "{67D1B65E-520D-45B6-A865-24675150392F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectCeilidh.Ceilidh.Standard", "ProjectCeilidh.Ceilidh.Standard\ProjectCeilidh.Ceilidh.Standard.csproj", "{67D1B65E-520D-45B6-A865-24675150392F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectCeilidh.Ceilidh.ConsoleShell", "ProjectCeilidh.Ceilidh.ConsoleShell\ProjectCeilidh.Ceilidh.ConsoleShell.csproj", "{289C1BA5-AC89-4B00-A7DB-A35DEAC7E3DB}"
 EndProject

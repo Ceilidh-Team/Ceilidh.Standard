@@ -1,4 +1,4 @@
-﻿namespace ProjectCeildih.Ceilidh.Standard
+﻿namespace ProjectCeilidh.Ceilidh.Standard
 {
     public sealed class CeilidhStartOptions
     {
