@@ -2,11 +2,7 @@
 {
     public sealed class CeilidhStartOptions
     {
-        public string[] StartOptions { get; }
-
-        public CeilidhStartOptions(string[] startOptions)
-        {
-            StartOptions = startOptions;
-        }
+        public string ConfigFile { get; set; }
+        public string UserDataPath { get; set; }
     }
 }

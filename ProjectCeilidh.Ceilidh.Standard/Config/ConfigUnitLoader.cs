@@ -9,7 +9,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Config
     public class ConfigUnitLoader : IUnitLoader
     {
         private static readonly string DefaultHomePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ceilidh");
-        private static readonly string DefaultConfigPath = Path.Combine(DefaultHomePath, "config.xml");
 
         public string HomePath { get; }
 
@@ -17,17 +16,22 @@ namespace ProjectCeilidh.Ceilidh.Standard.Config
 
         public ConfigUnitLoader(CeilidhStartOptions options)
         {
-            HomePath = DefaultHomePath;
+            HomePath = options.UserDataPath ?? DefaultHomePath;
             Directory.CreateDirectory(HomePath);
 
-            if (File.Exists(DefaultConfigPath))
-                using (var configFile = File.OpenRead(DefaultConfigPath))
+            var configPath = options.ConfigFile ?? Path.Combine(HomePath, "config.xml");
+
+            if (File.Exists(configPath))
+                using (var configFile = File.OpenRead(configPath))
                 {
                     var serializer = new XmlSerializer(typeof(CeilidhConfig));
                     Config = (CeilidhConfig)serializer.Deserialize(configFile);
                 }
             else
                 Config = CeilidhConfig.DefaultConfig;
+
+            Config.HomePath = HomePath;
+            // TODO: A config controller is necessary to allow extension and saving
         }
 
         public void RegisterUnits(CobbleContext context)

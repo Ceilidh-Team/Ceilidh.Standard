@@ -9,16 +9,19 @@ namespace ProjectCeilidh.Ceilidh.Standard.Config
         public static readonly CeilidhConfig DefaultConfig = new CeilidhConfig
         {
             Culture = null,
-            ExcludeClass = new List<string>(),
+            ExcludeClass = new HashSet<string>(),
             Plugins = new List<string>()
         };
+
+        [XmlIgnore]
+        public string HomePath;
 
         [XmlElement(ElementName = "culture", IsNullable = false)]
         public string Culture;
 
         [XmlArray(ElementName = "exclusions")]
         [XmlArrayItem("exclude")]
-        public List<string> ExcludeClass;
+        public HashSet<string> ExcludeClass;
 
         [XmlArray(ElementName = "plugins")]
         [XmlArrayItem("plugin")]

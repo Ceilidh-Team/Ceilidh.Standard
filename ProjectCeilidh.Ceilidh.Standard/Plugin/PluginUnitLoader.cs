@@ -19,20 +19,23 @@ namespace ProjectCeilidh.Ceilidh.Standard.Plugin
         public void RegisterUnits(CobbleContext context)
         {
             var dir = Directory.CreateDirectory(Path.Combine(_configUnitLoader.HomePath, "plugins"));
-            foreach (var file in dir.EnumerateFileSystemInfos())
+            foreach (var file in dir.EnumerateFileSystemInfos().Select(x => x.FullName).Concat(_configUnitLoader.Config.Plugins))
             {
-                var asm = Assembly.LoadFrom(file.FullName);
+                var asm = Assembly.LoadFrom(file);
 
                 var pluginContext = new CobbleContext();
+
+                pluginContext.AddUnmanaged(_configUnitLoader.Config);
 
                 foreach (var unit in asm.GetExportedTypes().Where(x => x != typeof(IUnitLoader) && typeof(IUnitLoader).IsAssignableFrom(x)))
                     pluginContext.AddManaged(unit);
 
                 pluginContext.Execute();
 
-                if (pluginContext.TryGetImplementations<IUnitLoader>(out var loaders))
-                    foreach (var loader in loaders)
-                        loader.RegisterUnits(context);
+                if (!pluginContext.TryGetImplementations<IUnitLoader>(out var loaders)) continue;
+
+                foreach (var loader in loaders)
+                    loader.RegisterUnits(context);
             }
         }
     }
