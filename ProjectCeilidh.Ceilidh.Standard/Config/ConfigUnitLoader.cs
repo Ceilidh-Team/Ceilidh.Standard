@@ -1,11 +1,16 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
+using System.Threading;
 using System.Xml.Serialization;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Cobble;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Config
 {
+    /// <summary>
+    /// Loads configuration into the main <see cref="CobbleContext"/>
+    /// </summary>
     public class ConfigUnitLoader : IUnitLoader
     {
         private static readonly string DefaultHomePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ceilidh");
@@ -31,6 +36,10 @@ namespace ProjectCeilidh.Ceilidh.Standard.Config
                 Config = CeilidhConfig.DefaultConfig;
 
             Config.HomePath = HomePath;
+
+            if (Config.Culture != null)
+                CultureInfo.DefaultThreadCurrentUICulture = Thread.CurrentThread.CurrentUICulture = Config.Culture;
+
             // TODO: A config controller is necessary to allow extension and saving
         }
 

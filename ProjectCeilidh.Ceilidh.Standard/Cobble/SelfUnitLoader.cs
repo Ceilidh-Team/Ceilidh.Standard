@@ -1,11 +1,14 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 using ProjectCeilidh.Ceilidh.Standard.Config;
 using ProjectCeilidh.Cobble;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Cobble
 {
+    /// <summary>
+    /// Load all execution units from Ceilidh.Standard
+    /// </summary>
+    /// <inheritdoc />
     public class SelfUnitLoader : IUnitLoader
     {
         private readonly CeilidhStartOptions _startOptions;
@@ -19,6 +22,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Cobble
 
         public void RegisterUnits(CobbleContext context)
         {
+            // Resolve duplicates: prefer overrides from outside Ceilidh.Standard
             context.DuplicateResolver =
                        (pattern, implementations) =>
                        {
@@ -30,8 +34,9 @@ namespace ProjectCeilidh.Ceilidh.Standard.Cobble
                            return impl;
                        };
 
-            context.AddUnmanaged(_startOptions);
+            context.AddUnmanaged(_startOptions); // Add start options to the main graph
 
+            // Add everything that has a CobbleExportAttribute
             foreach (var exp in typeof(IUnitLoader).Assembly.GetExportedTypes()
                 .Where(x => x.GetCustomAttribute<CobbleExportAttribute>() != null && !_config.ExcludeClass.Contains(x.FullName)))
                 context.AddManaged(exp);

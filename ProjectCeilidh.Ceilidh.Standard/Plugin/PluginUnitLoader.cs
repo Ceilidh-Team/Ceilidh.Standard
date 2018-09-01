@@ -7,6 +7,9 @@ using ProjectCeilidh.Cobble;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Plugin
 {
+    /// <summary>
+    /// Loads plugin assemblies into the main context
+    /// </summary>
     public class PluginUnitLoader : IUnitLoader
     {
         private readonly ConfigUnitLoader _configUnitLoader;
