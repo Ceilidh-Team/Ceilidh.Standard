@@ -3,15 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ceilidh-core", "ceilidh-core\ceilidh-core.csproj", "{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ceilidh-core-tests", "ceilidh-core-tests\ceilidh-core-tests.csproj", "{1659D551-4550-4035-AB3A-5EC97841E1D7}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectCeilidh.Ceilidh.Standard", "ProjectCeilidh.Ceilidh.Standard\ProjectCeilidh.Ceilidh.Standard.csproj", "{67D1B65E-520D-45B6-A865-24675150392F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectCeilidh.Ceilidh.ConsoleShell", "ProjectCeilidh.Ceilidh.ConsoleShell\ProjectCeilidh.Ceilidh.ConsoleShell.csproj", "{289C1BA5-AC89-4B00-A7DB-A35DEAC7E3DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectCeilidh.Ceilidh.Standard.Tests", "ProjectCeilidh.Ceilidh.Standard.Tests\ProjectCeilidh.Ceilidh.Standard.Tests.csproj", "{6D874564-813F-45AA-A7C2-8AD04AA45150}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectCeilidh.Ceilidh.Standard.Tests", "ProjectCeilidh.Ceilidh.Standard.Tests\ProjectCeilidh.Ceilidh.Standard.Tests.csproj", "{6D874564-813F-45AA-A7C2-8AD04AA45150}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,30 +19,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Debug|x64.Build.0 = Debug|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Debug|x86.Build.0 = Debug|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Release|x64.ActiveCfg = Release|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Release|x64.Build.0 = Release|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Release|x86.ActiveCfg = Release|Any CPU
-		{103E8F2D-8CD5-42EC-82D0-9274FF12C7CA}.Release|x86.Build.0 = Release|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Debug|x64.Build.0 = Debug|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Debug|x86.Build.0 = Debug|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Release|x64.ActiveCfg = Release|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Release|x64.Build.0 = Release|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Release|x86.ActiveCfg = Release|Any CPU
-		{1659D551-4550-4035-AB3A-5EC97841E1D7}.Release|x86.Build.0 = Release|Any CPU
 		{67D1B65E-520D-45B6-A865-24675150392F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{67D1B65E-520D-45B6-A865-24675150392F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{67D1B65E-520D-45B6-A865-24675150392F}.Debug|x64.ActiveCfg = Debug|Any CPU
