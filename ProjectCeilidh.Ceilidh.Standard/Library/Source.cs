@@ -22,5 +22,8 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
         public override string ToString() => Uri;
         public override bool Equals(object obj) => obj is Source s && s.Uri == Uri;
         public virtual bool Equals(Source source) => source.Uri == Uri;
+
+        public static bool operator ==(Source one, Source two) => (one == null && two == null) || one.Equals(two);
+        public static bool operator !=(Source one, Source two) => !(one == two);
     }
 }
