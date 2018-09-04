@@ -13,4 +13,8 @@
     <Folder Include="Plugin\" />
     <Folder Include="Config\" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Data\IObservableCollection.cs" />
+    <Compile Remove="Data\IReadOnlyObservableCollection.cs" />
+  </ItemGroup>
 </Project>

@@ -58,7 +58,7 @@ namespace ProjectCeilidh.Ceilidh.ConsoleShell
             foreach (var register in impl)
                 register.RegisterUnits(ceilidhContext);
 
-            ceilidhContext.Execute();
+            ceilidhContext.ExecuteAsync().Wait();
 
             return 0;
         }

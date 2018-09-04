@@ -24,39 +24,26 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
 
         public void UnitLoaded(ILibraryProvider unit)
         {
-            unit.UriChanged += UnitOnUriChanged;
-            unit.SourceChanged += UnitOnSourceChanged;
-
             _providers.Add(unit);
         }
 
-        private void UnitOnSourceChanged(object sender, SourceChangedEventArgs e)
+        public bool TryGetSource(string uri, out Source source)
         {
-
+            source = default;
+            var prov = _providers.FirstOrDefault(x => x.CanAccept(uri));
+            if (prov == null) return false;
+            return prov.TryGetSource(uri, out source);
         }
 
-        private void UnitOnUriChanged(object sender, UriChangedEventArgs e)
+        public bool TryGetLibraryCollection(string uri, out ILibraryCollection sources)
         {
-            throw new NotImplementedException();
+            sources = default;
+            var prov = _providers.FirstOrDefault(x => x.CanAccept(uri));
+            if (prov == null) return false;
+            return prov.TryGetLibraryCollection(uri, out sources);
         }
-
-        public bool TryGetSource(string uri, out ISource source) => (source = _providers.FirstOrDefault(x => x.CanAccept(uri))?.GetSource(uri)) != null;
 
         public IEnumerator<string> GetEnumerator() => _libraryUris.Keys.GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        public void Add(string item)
-        {
-            if (item == null) throw new ArgumentNullException(nameof(item));
-
-            var prov = _providers.FirstOrDefault(x => x.CanAccept(item));
-            if (prov == null) return;
-
-            _libraryUris.TryAdd(item, prov);
-
-            prov.Add(item); // TODO: Events
-        }
 
         public void Clear()
         {
@@ -73,13 +60,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
         public void CopyTo(string[] array, int arrayIndex)
         {
             _libraryUris.Keys.CopyTo(array, arrayIndex);
-        }
-
-        public bool Remove(string item)
-        {
-            if (item == null) throw new ArgumentNullException(nameof(item));
-
-            return _libraryUris.TryRemove(item, out var prov) && prov.Remove(item);
         }
 
         public int Count => _libraryUris.Count;
