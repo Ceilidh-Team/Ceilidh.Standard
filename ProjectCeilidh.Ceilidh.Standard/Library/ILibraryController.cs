@@ -3,7 +3,7 @@ using ProjectCeilidh.Cobble;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Library
 {
-    public interface ILibraryController : ILateInject<ILibraryProvider>, ICollection<string>
+    public interface ILibraryController : ILateInject<ILibraryProvider>
     {
         /// <summary>
         ///     Try to produce a <see cref="ISource" /> for a given URI.

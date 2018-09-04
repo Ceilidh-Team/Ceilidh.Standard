@@ -6,7 +6,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
 
     public delegate void UriChangedEventHandler(object sender, UriChangedEventArgs e);
 
-    public interface ILibraryProvider : ICollection<string>
+    public interface ILibraryProvider
     {
         bool CanAccept(string uri);
 

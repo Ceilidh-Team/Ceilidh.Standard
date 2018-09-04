@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Library
@@ -17,10 +16,29 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
         public GeneralLibraryController(IEnumerable<ILibraryProvider> libraryProviders)
         {
             _libraryUris = new ConcurrentDictionary<string, ILibraryProvider>();
-            _providers = new ConcurrentBag<ILibraryProvider>(libraryProviders);
+            _providers = new ConcurrentBag<ILibraryProvider>();
+
+            foreach (var provider in libraryProviders)
+                UnitLoaded(provider);
         }
 
-        public void UnitLoaded(ILibraryProvider unit) => _providers.Add(unit);
+        public void UnitLoaded(ILibraryProvider unit)
+        {
+            unit.UriChanged += UnitOnUriChanged;
+            unit.SourceChanged += UnitOnSourceChanged;
+
+            _providers.Add(unit);
+        }
+
+        private void UnitOnSourceChanged(object sender, SourceChangedEventArgs e)
+        {
+
+        }
+
+        private void UnitOnUriChanged(object sender, UriChangedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
 
         public bool TryGetSource(string uri, out ISource source) => (source = _providers.FirstOrDefault(x => x.CanAccept(uri))?.GetSource(uri)) != null;
 
@@ -30,6 +48,8 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
 
         public void Add(string item)
         {
+            if (item == null) throw new ArgumentNullException(nameof(item));
+
             var prov = _providers.FirstOrDefault(x => x.CanAccept(item));
             if (prov == null) return;
 
@@ -45,17 +65,21 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
 
         public bool Contains(string item)
         {
-            return _libraryUris.Contains(item);
+            if (item == null) throw new ArgumentNullException(nameof(item));
+
+            return _libraryUris.ContainsKey(item);
         }
 
         public void CopyTo(string[] array, int arrayIndex)
         {
-            _libraryUris.CopyTo(array, arrayIndex);
+            _libraryUris.Keys.CopyTo(array, arrayIndex);
         }
 
         public bool Remove(string item)
         {
-            return _libraryUris.Remove(item);
+            if (item == null) throw new ArgumentNullException(nameof(item));
+
+            return _libraryUris.TryRemove(item, out var prov) && prov.Remove(item);
         }
 
         public int Count => _libraryUris.Count;
