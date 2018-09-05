@@ -1,7 +1,10 @@
 language: csharp
 solution: ceilidh-core.sln
 mono: none
-dotnet: 2.1.302
+dotnet: 2.1.401
+os:
+  - linux
+  - osx
 install:
   - dotnet restore
 script:
