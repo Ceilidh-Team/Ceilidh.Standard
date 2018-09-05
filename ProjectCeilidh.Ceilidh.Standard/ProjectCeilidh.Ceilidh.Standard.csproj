@@ -3,10 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ProjectCeilidh.Cobble" Version="1.0.0" />
+    <PackageReference Include="FFmpeg.AutoGen" Version="4.0.0.4" />
+    <PackageReference Include="ProjectCeilidh.Cobble" Version="1.1.0" />
   </ItemGroup>
 
   <ItemGroup>
