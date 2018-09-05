@@ -10,7 +10,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
         /// <summary>
         /// The URI for this source.
         /// </summary>
-        public string Uri { get; protected set; }
+        public abstract string Uri { get; }
 
         /// <summary>
         /// Get a stream for the specified source.
@@ -23,7 +23,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
         public override bool Equals(object obj) => obj is Source s && s.Uri == Uri;
         public virtual bool Equals(Source source) => source.Uri == Uri;
 
-        public static bool operator ==(Source one, Source two) => (one == null && two == null) || one.Equals(two);
+        public static bool operator ==(Source one, Source two) => one == null && two == null || one != null && two != null && one.Equals(two);
         public static bool operator !=(Source one, Source two) => !(one == two);
     }
 }

@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Ceilidh.Standard.Config;
 using ProjectCeilidh.Ceilidh.Standard.Localization;

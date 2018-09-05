@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -12,13 +11,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
     [CobbleExport]
     public class FileSystemLibraryProvider : ILibraryProvider
     {
-        private readonly ConcurrentDictionary<string, FileSystemWatcher> _monitorUris;
-
-        public FileSystemLibraryProvider()
-        {
-            _monitorUris = new ConcurrentDictionary<string, FileSystemWatcher>();
-        }
-
         public bool CanAccept(string uri)
         {
             try
@@ -51,6 +43,8 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
 
         private class FileSystemSource : Source
         {
+            public override string Uri { get; }
+
             public FileSystemSource(string uri) => Uri = uri;
 
             public override Stream GetStream() => File.OpenRead(Uri);
@@ -60,7 +54,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
         {
             public string Uri { get; }
 
-            public int Count => throw new NotImplementedException();
+            public int Count => _files.Count;
 
             private readonly ConcurrentDictionary<string, Source> _files;
             private readonly FileSystemWatcher _watcher;
@@ -69,18 +63,20 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
             {
                 Uri = uri;
 
-                _files = new ConcurrentDictionary<string, Source>(Directory.EnumerateFiles(uri, "*", SearchOption.AllDirectories).Select(x => new KeyValuePair<string, Source>(x, new FileSystemSource(x))));
+                _files = new ConcurrentDictionary<string, Source>(Directory
+                    .EnumerateFiles(uri, "*", SearchOption.AllDirectories)
+                    .Select(x => new KeyValuePair<string, Source>(x, new FileSystemSource(x))));
                 _watcher = new FileSystemWatcher
                 {
                     Path = uri,
                     NotifyFilter = NotifyFilters.Attributes
-                                                | NotifyFilters.CreationTime
-                                                | NotifyFilters.DirectoryName
-                                                | NotifyFilters.FileName
-                                                | NotifyFilters.LastAccess
-                                                | NotifyFilters.LastWrite
-                                                | NotifyFilters.Security
-                                                | NotifyFilters.Size,
+                                   | NotifyFilters.CreationTime
+                                   | NotifyFilters.DirectoryName
+                                   | NotifyFilters.FileName
+                                   | NotifyFilters.LastAccess
+                                   | NotifyFilters.LastWrite
+                                   | NotifyFilters.Security
+                                   | NotifyFilters.Size,
                 };
 
                 _watcher.Changed += WatcherOnChanged;
@@ -91,16 +87,16 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
                 _watcher.EnableRaisingEvents = true;
             }
 
-            void WatcherOnChanged(object sender, FileSystemEventArgs e)
+            private void WatcherOnChanged(object sender, FileSystemEventArgs e)
             {
                 if (e.ChangeType != WatcherChangeTypes.Changed) return;
 
-                var src = new FileSystemSource(e.FullPath);
+                var src = _files.GetOrAdd(e.FullPath, x => new FileSystemSource(x));
 
                 CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, src, src));
             }
 
-            void WatcherOnCreated(object sender, FileSystemEventArgs e)
+            private void WatcherOnCreated(object sender, FileSystemEventArgs e)
             {
                 var src = new FileSystemSource(e.FullPath);
 
@@ -109,14 +105,14 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
                 CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, src));
             }
 
-            void WatcherOnDeleted(object sender, FileSystemEventArgs e)
+            private void WatcherOnDeleted(object sender, FileSystemEventArgs e)
             {
                 if (!_files.TryRemove(e.FullPath, out var src)) return;
 
                 CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, src));
             }
 
-            void WatcherOnRenamed(object sender, RenamedEventArgs e)
+            private void WatcherOnRenamed(object sender, RenamedEventArgs e)
             {
                 if (_files.TryRemove(e.OldFullPath, out var oldSrc))
                     CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, oldSrc));
@@ -139,6 +135,8 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
                 _watcher.Created -= WatcherOnCreated;
                 _watcher.Deleted -= WatcherOnDeleted;
                 _watcher.Renamed -= WatcherOnRenamed;
+
+                _watcher.Dispose();
             }
 
             public event NotifyCollectionChangedEventHandler CollectionChanged;

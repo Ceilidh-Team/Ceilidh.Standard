@@ -27,16 +27,14 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
         {
             source = default;
             var prov = _providers.FirstOrDefault(x => x.CanAccept(uri));
-            if (prov == null) return false;
-            return prov.TryGetSource(uri, out source);
+            return prov != null && prov.TryGetSource(uri, out source);
         }
 
         public bool TryGetLibraryCollection(string uri, out ILibraryCollection sources)
         {
             sources = default;
             var prov = _providers.FirstOrDefault(x => x.CanAccept(uri));
-            if (prov == null) return false;
-            return prov.TryGetLibraryCollection(uri, out sources);
+            return prov != null && prov.TryGetLibraryCollection(uri, out sources);
         }
     }
 }
