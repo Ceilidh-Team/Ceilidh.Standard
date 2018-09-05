@@ -14,7 +14,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder
 
         public abstract void Seek(TimeSpan timestamp);
 
-        public override long Length => TotalSamples * Format.DataFormat.BytesPerSample() * Format.Channels;
+        public override long Length => TotalSamples * Format.DataFormat.BytesPerSample / 8 * Format.Channels;
         public sealed override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         public sealed override void Flush() => throw new NotSupportedException();
         public sealed override void SetLength(long value) => throw new NotSupportedException();
@@ -23,7 +23,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder
         {
             if (origin != SeekOrigin.Begin) throw new ArgumentOutOfRangeException(nameof(origin));
 
-            Seek(TimeSpan.FromSeconds(offset / Format.DataFormat.BytesPerSample() / Format.Channels *
+            Seek(TimeSpan.FromSeconds(offset / Format.DataFormat.BytesPerSample / Format.Channels *
                                       Format.SampleRate));
 
             return offset;

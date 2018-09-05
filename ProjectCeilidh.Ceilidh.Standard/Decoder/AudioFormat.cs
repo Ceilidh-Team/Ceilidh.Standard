@@ -18,11 +18,44 @@
             channels = Channels;
             dataFormat = DataFormat;
         }
+
+        public override string ToString()
+        {
+            return $"{SampleRate} Hz, {Channels}Ch, {DataFormat}";
+        }
     }
 
-    public enum AudioDataFormat : ushort
+    public enum NumberFormat : byte
     {
-        Unsigned = 0x0000,
+        Unsigned,
+        Signed,
+        FloatingPoint
+    }
+
+    public readonly struct AudioDataFormat
+    {
+        public readonly NumberFormat NumberFormat;
+        public readonly bool BigEndian;
+        public readonly int BytesPerSample;
+
+        public AudioDataFormat(NumberFormat numberFormat, bool bigEndian, int bytesPerSample)
+        {
+            NumberFormat = numberFormat;
+            BigEndian = bigEndian;
+            BytesPerSample = bytesPerSample;
+        }
+
+        public override int GetHashCode()
+        {
+            return ((byte)NumberFormat << 16) | (BigEndian ? 0x0000 : 0x1000) | BytesPerSample;
+        }
+
+        public override string ToString()
+        {
+            return $"{NumberFormat}, {(BigEndian ? "Big Endian" : "Little Endian")}, {BytesPerSample * 8}-bit";
+        }
+
+        /*Unsigned = 0x0000,
         Signed = 0x0100,
         FloatingPoint = 0x0200,
         BigEndian = 0x0000,
@@ -39,24 +72,6 @@
         Float32BigEndian = FloatingPoint | BigEndian | 32,
         Float32LittleEndian = FloatingPoint | LittleEndian | 32,
         Float64BigEndian = FloatingPoint | BigEndian | 64,
-        Float64LittleEndian = FloatingPoint | LittleEndian | 64
-    }
-
-    public static class AudioDataFormatExtensions
-    {
-        public static AudioDataFormat Endianness(this AudioDataFormat format)
-        {
-            return (AudioDataFormat) ((ushort) format & 0xF000);
-        }
-
-        public static AudioDataFormat NumericType(this AudioDataFormat format)
-        {
-            return (AudioDataFormat) ((ushort) format & 0x0F00);
-        }
-
-        public static int BytesPerSample(this AudioDataFormat format)
-        {
-            return (ushort)format & 0x00FF;
-        }
+        Float64LittleEndian = FloatingPoint | LittleEndian | 64*/
     }
 }
