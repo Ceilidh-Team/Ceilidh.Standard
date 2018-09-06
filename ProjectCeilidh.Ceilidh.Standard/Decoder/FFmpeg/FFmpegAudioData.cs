@@ -2,14 +2,31 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using FFmpeg.AutoGen;
+using static FFmpeg.AutoGen.ffmpeg;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
 {
-    public unsafe class FFmpegAudioData : AudioData
+    internal unsafe class FFmpegAudioData : AudioData
     {
-        public override IReadOnlyDictionary<string, string> Metadata { get; }
+        public override IReadOnlyDictionary<string, string> Metadata
+        {
+            get
+            {
+                var metadataDict = _streams[_selectedStream]->metadata;
+                if (metadataDict == null)
+                    metadataDict = _formatContext->metadata;
+
+                var dict = new Dictionary<string, string>();
+
+                AVDictionaryEntry* entry = null;
+                while ((entry = av_dict_get(metadataDict, "", entry, AV_DICT_IGNORE_SUFFIX)) != null)
+                    dict.Add(Marshal.PtrToStringAnsi(new IntPtr(entry->key)), Marshal.PtrToStringAnsi(new IntPtr(entry->value)));
+
+                return dict;
+            }
+        }
+
         public override int StreamCount { get; }
         public override int SelectedStream => _selectedStream;
 
@@ -27,6 +44,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
                 if (format->streams[i]->codecpar->codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO)
                     tmp[j++] = format->streams[i];
 
+            StreamCount = j;
             _streams = new AVStream*[j];
             Array.Copy(tmp, _streams, j);
         }
@@ -47,23 +65,20 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
             if (_formatContext != null)
             {
                 if (_formatContext->pb != null && _formatContext->pb->buffer != null)
-                    ffmpeg.av_freep(&_formatContext->pb->buffer);
+                    av_freep(&_formatContext->pb->buffer);
 
                 if (_formatContext->pb != null)
                 {
                     var handle = GCHandle.FromIntPtr(new IntPtr(_formatContext->pb->opaque));
 
-                    if (handle.IsAllocated)
-                    {
-                        ((Stream)handle.Target).Dispose();
-                        handle.Free();
-                    }
+                    ((Stream)handle.Target).Dispose();
+                    handle.Free();
 
-                    ffmpeg.avio_context_free(&_formatContext->pb);
+                    avio_context_free(&_formatContext->pb);
                 }
 
                 fixed (AVFormatContext** formatPtr = &_formatContext)
-                    ffmpeg.avformat_close_input(formatPtr);
+                    avformat_close_input(formatPtr);
             }
         }
     }

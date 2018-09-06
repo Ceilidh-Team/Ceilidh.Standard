@@ -13,78 +13,55 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
         private static readonly avio_alloc_context_read_packet ReadDelegate = ReadImpl;
         private static readonly avio_alloc_context_seek SeekDelegate = SeekImpl;
 
-        public FFmpegDecoder()
-        {
-            // TODO: Locate libraries on linux
-        }
-
         public bool TryDecode(Stream source, out AudioData audioData)
         {
             audioData = default;
 
-            AVIOContext* ioContext = null;
-            try
+            var ioContext = CreateIoContext(source, out var sourceHandle);
+            var formatContext = avformat_alloc_context();
+            formatContext->pb = ioContext;
+
+            if (avformat_open_input(&formatContext, "", null, null) != 0)
             {
-                ioContext = CreateIoContext(source, out var sourceHandle);
+                source.Dispose();
+                sourceHandle.Free();
 
-                AVFormatContext* formatContext = null;
-                try
-                {
-                    formatContext = avformat_alloc_context();
-                    formatContext->pb = ioContext;
+                if (formatContext == null) return false;
 
-                    if (avformat_open_input(&formatContext, "", null, null) != 0)
-                    {
-                        source.Dispose();
-                        sourceHandle.Free();
+                av_freep(formatContext->pb->buffer);
 
-                        if (formatContext != null)
-                        {
-                            av_freep(formatContext->pb->buffer);
+                avio_context_free(&formatContext->pb);
+                avformat_free_context(formatContext);
 
-                            avio_context_free(&formatContext->pb);
-                            avformat_free_context(formatContext);
-                        }
-
-                        return false;
-                    }
-
-                    if (avformat_find_stream_info(formatContext, null) != 0)
-                    {
-                        source.Dispose();
-                        sourceHandle.Free();
-
-                        if (formatContext != null)
-                        {
-                            av_freep(formatContext->pb->buffer);
-
-                            avio_context_free(&formatContext->pb);
-                            avformat_close_input(&formatContext);
-                        }
-
-                        return false;
-                    }
-
-                    audioData = new FFmpegAudioData(formatContext);
-                    ioContext = null;
-                    formatContext = null;
-                    return true;
-                }
-                catch
-                {
-                    // TODO
-                    ioContext = null;
-
-                    throw;
-                }
+                return false;
             }
-            catch
+
+            if (avformat_find_stream_info(formatContext, null) != 0)
             {
-                // TODO
-                throw;
+                source.Dispose();
+                sourceHandle.Free();
+
+                if (formatContext != null)
+                {
+                    av_freep(formatContext->pb->buffer);
+
+                    avio_context_free(&formatContext->pb);
+                    avformat_close_input(&formatContext);
+                }
+
+                return false;
             }
+
+            audioData = new FFmpegAudioData(formatContext);
+            return true;
         }
 
+        /// <summary>
+        /// Create an <see cref="AVIOContext"/> from the specified stream, producing a GCHandle that keeps the stream alive.
+        /// </summary>
+        /// <param name="stream">The stream to read from</param>
+        /// <param name="handle">The produced handle</param>
+        /// <returns>A pointer to the new context</returns>
         private static AVIOContext* CreateIoContext(Stream stream, out GCHandle handle)
         {
             handle = GCHandle.Alloc(stream);

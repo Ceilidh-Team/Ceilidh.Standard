@@ -6,15 +6,19 @@ using static FFmpeg.AutoGen.ffmpeg;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
 {
-    public unsafe class FFmpegAudioStream : AudioStream
+    internal unsafe class FFmpegAudioStream : AudioStream
     {
-        private static readonly int EAGAIN = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 35 : 11;
+        private static readonly int EAgain = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 35 : 11;
 
         public override bool CanSeek => _formatContext->pb->seek.Pointer != IntPtr.Zero;
         public override long Position { get; set; }
-        public override AudioFormat Format => new AudioFormat(_codecContext->sample_rate, _codecContext->channels, new AudioDataFormat(GetNumberFormat(_codecContext->sample_fmt), !BitConverter.IsLittleEndian, av_get_bytes_per_sample(_codecContext->sample_fmt)));
-        public override long TotalSamples { get; }
+        public override AudioFormat Format => new AudioFormat(_codecContext->sample_rate, _codecContext->channels,
+            new AudioDataFormat(GetNumberFormat(_codecContext->sample_fmt), !BitConverter.IsLittleEndian,
+                av_get_bytes_per_sample(_codecContext->sample_fmt)));
 
+        public override long TotalSamples => _stream->duration * _stream->time_base.num / _stream->time_base.den *
+                                             _codecContext->sample_rate;
+            
         private int _extraPtr;
         private byte[] _extraData;
 
@@ -62,7 +66,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
             }
 
             int recieveError;
-            while ((recieveError = avcodec_receive_frame(_codecContext, _avFrame)) == -EAGAIN)
+            while ((recieveError = avcodec_receive_frame(_codecContext, _avFrame)) == -EAgain)
             {
                 AVPacket packet = default;
                 try
@@ -84,7 +88,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
                     {
                         switch (avcodec_send_packet(_codecContext, &packet))
                         {
-                            case -ffmpeg.EAGAIN:
+                            case var again when again == -EAgain:
                                 throw new IOException();
                             case var code when code < 0:
                                 throw new Exception(); // TODO

@@ -469,4 +469,5 @@ ASALocalRun/
 
 # Custom
 
-*.dll
+**/*.dll
+!ProjectCeilidh.Ceilidh.Standard/Decoder/FFmpeg/lib/*.dll

@@ -11,12 +11,7 @@
     <PackageReference Include="ProjectCeilidh.Cobble" Version="1.1.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Plugin\" />
-    <Folder Include="Config\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="Data\IObservableCollection.cs" />
-    <Compile Remove="Data\IReadOnlyObservableCollection.cs" />
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <None Update="Decoder\FFmpeg\lib\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

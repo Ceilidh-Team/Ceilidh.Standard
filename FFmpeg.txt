@@ -1,0 +1,2 @@
+The Windows FFmpeg binaries used by Ceilidh were compiled on a Linux system using the MinGW cross-compiler. This is the configure line:
+./configure --arch=x86_64 --target-os=mingw32 --cross-prefix=x86_64-w64-mingw32- --disable-protocols --disable-programs --enable-shared --disable-pthreads --disable-encoders --enable-static
