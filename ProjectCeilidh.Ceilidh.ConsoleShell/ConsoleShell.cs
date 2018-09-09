@@ -51,7 +51,7 @@ namespace ProjectCeilidh.Ceilidh.ConsoleShell
             foreach (var unit in typeof(IUnitLoader).Assembly.GetExportedTypes()
                 .Where(x => x != typeof(IUnitLoader) && typeof(IUnitLoader).IsAssignableFrom(x)))
                 loadContext.AddManaged(unit);
-            loadContext.Execute();
+            loadContext.ExecuteAsync().Wait();
             if (!loadContext.TryGetImplementations<IUnitLoader>(out var impl)) return 0;
 
             var ceilidhContext = new CobbleContext();

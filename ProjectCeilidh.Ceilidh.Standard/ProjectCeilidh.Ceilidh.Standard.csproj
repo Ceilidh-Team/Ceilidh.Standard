@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="4.0.0.4" />
-    <PackageReference Include="ProjectCeilidh.Cobble" Version="1.1.0" />
+    <PackageReference Include="ProjectCeilidh.Cobble" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
