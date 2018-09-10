@@ -1,13 +1,12 @@
 language: csharp
 solution: ceilidh-core.sln
 mono: none
-dotnet: 2.1.302
-before_install:
-  - sudo add-apt-repository ppa:mc3man/trusty-media -y
-  - sudo apt-get update
-  - sudo apt-get install -y ffmpeg
+dotnet: 2.1.401
+os:
+  - linux
+  - osx
 install:
   - dotnet restore
 script:
   - dotnet build
-  - dotnet test ceilidh-core-tests/ceilidh-core-tests.csproj
+  - dotnet test ProjectCeilidh.Ceilidh.Standard.Tests/ProjectCeilidh.Ceilidh.Standard.Tests.csproj
