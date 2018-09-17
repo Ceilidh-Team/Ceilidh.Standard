@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
@@ -14,21 +15,32 @@ namespace ProjectCeilidh.Ceilidh.Standard.Localization
     {
         public const string POLYGLOT_PHRASE_ERROR = "polyglot.phraseError";
 
-        private static readonly IReadOnlyDictionary<CultureInfo, PluralGroups> CultureGroups = new Dictionary<PluralGroups, string[]>
+        private static readonly IReadOnlyDictionary<CultureInfo, PluralGroup> CultureGroups = new Dictionary<PluralGroup, string[]>
         {
-            [PluralGroups.Arabic] = new[] { "ar" },
-            [PluralGroups.BosnianSerbian] = new[] { "bs-Latn-BA", "bs-Cyrl-BA", "srl-RS", "sr-RS" },
-            [PluralGroups.Chinese] = new[] { "id", "id-ID", "ja", "ko", "ko-KR", "lo", "ms", "th", "th-TH", "zh" },
-            [PluralGroups.Croatian] = new[] { "hr", "hr-HR" },
-            [PluralGroups.German] = new[] { "", "fa", "da", "de", "en", "es", "fi", "el", "he", "hi-IN", "hu", "hu-HU", "it", "nl", "no", "pt", "sv", "tr" }, // Note: The invariant culture is English, but not region-specific.
-            [PluralGroups.French] = new[] { "fr", "tl", "pt-br" },
-            [PluralGroups.Russian] = new[] { "ru", "ru-RU" },
-            [PluralGroups.Lithuanian] = new[] { "lt" },
-            [PluralGroups.Czech] = new[] { "cs", "cs-CZ", "sk" },
-            [PluralGroups.Polish] = new[] { "pl" },
-            [PluralGroups.Icelandic] = new[] { "is" },
-            [PluralGroups.Slovenian] = new[] { "sl-SL" },
-        }.SelectMany(x => x.Value.Select(y => (culture: CultureInfo.GetCultureInfo(y), pluralGroup: x.Key))).ToDictionary(x => x.culture, y => y.pluralGroup);
+            [PluralGroup.Arabic] = new[] { "ar" },
+            [PluralGroup.BosnianSerbian] = new[] { "bs-Latn-BA", "bs-Cyrl-BA", "sr-Cyrl-RS", "sr-Latin-RS" },
+            [PluralGroup.Chinese] = new[] { "id", "id-ID", "ja", "ko", "ko-KR", "lo", "ms", "th", "th-TH", "zh" },
+            [PluralGroup.Croatian] = new[] { "hr", "hr-HR" },
+            [PluralGroup.German] = new[] { "", "fa", "da", "de", "en", "es", "fi", "el", "he", "hi-IN", "hu", "hu-HU", "it", "nl", "no", "pt", "sv", "tr" }, // Note: The invariant culture is English, but not region-specific.
+            [PluralGroup.French] = new[] { "fr", "fil", "pt-br" },
+            [PluralGroup.Russian] = new[] { "ru", "ru-RU" },
+            [PluralGroup.Lithuanian] = new[] { "lt" },
+            [PluralGroup.Czech] = new[] { "cs", "cs-CZ", "sk" },
+            [PluralGroup.Polish] = new[] { "pl" },
+            [PluralGroup.Icelandic] = new[] { "is" },
+            [PluralGroup.Slovenian] = new[] { "sl-SI" }
+        }.SelectMany(x => x.Value.Select(y =>
+        {
+            try
+            {
+                return (Culture: CultureInfo.GetCultureInfo(y), PluralGroup: x.Key);
+            }
+            catch
+            {
+                Debug.WriteLine($"Failed to load a culture for locale \"{y}\"");
+                return (null, x.Key);
+            }
+        }).Where(y => y.Culture != null)).ToDictionary(x => x.Culture, y => y.PluralGroup);
 
         /// <summary>
         /// The culture used for pluralization options.
@@ -136,13 +148,13 @@ namespace ProjectCeilidh.Ceilidh.Standard.Localization
 
             switch (group)
             {
-                case PluralGroups.Arabic:
+                case PluralGroup.Arabic:
                     if (count < 3) return (int)count;
                     if (lastTwo >= 3 && lastTwo <= 10) return 3;
                     return lastTwo >= 11 ? 4 : 5;
-                case PluralGroups.BosnianSerbian:
-                case PluralGroups.Croatian:
-                case PluralGroups.Russian:
+                case PluralGroup.BosnianSerbian:
+                case PluralGroup.Croatian:
+                case PluralGroup.Russian:
                     if (lastTwo != 11 && end == 1)
                         return 0;
 
@@ -150,24 +162,24 @@ namespace ProjectCeilidh.Ceilidh.Standard.Localization
                         return 1;
 
                     return 2;
-                case PluralGroups.Chinese:
+                case PluralGroup.Chinese:
                     return 0;
-                case PluralGroups.French:
+                case PluralGroup.French:
                     return count > 1 ? 1 : 0;
-                case PluralGroups.German:
+                case PluralGroup.German:
                     return count != 1 ? 1 : 0;
-                case PluralGroups.Lithuanian:
+                case PluralGroup.Lithuanian:
                     if (end == 1 && lastTwo != 11) return 0;
                     return end >= 2 && end <= 9 && (lastTwo < 11 || lastTwo > 19) ? 1 : 2;
-                case PluralGroups.Czech:
+                case PluralGroup.Czech:
                     if (count == 1) return 0;
                     return count >= 2 && count <= 4 ? 1 : 2;
-                case PluralGroups.Polish:
+                case PluralGroup.Polish:
                     if (count == 1) return 0;
                     return 2 <= count && end <= 4 && (lastTwo < 10 || lastTwo >= 20) ? 1 : 2;
-                case PluralGroups.Icelandic:
+                case PluralGroup.Icelandic:
                     return end != 1 || lastTwo == 11 ? 1 : 0;
-                case PluralGroups.Slovenian:
+                case PluralGroup.Slovenian:
                     switch (lastTwo)
                     {
                         case 1:
@@ -185,7 +197,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Localization
             }
         }
 
-        private enum PluralGroups
+        private enum PluralGroup
         {
             Arabic,
             BosnianSerbian,
