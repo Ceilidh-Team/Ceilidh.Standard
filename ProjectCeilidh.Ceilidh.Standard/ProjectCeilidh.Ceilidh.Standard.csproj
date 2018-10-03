@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="4.0.0.4" />
-    <PackageReference Include="NAudio" Version="1.8.4" />
     <PackageReference Include="ProjectCeilidh.Cobble" Version="1.1.1" />
+    <PackageReference Include="SharpDX.XAudio2" Version="4.2.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">

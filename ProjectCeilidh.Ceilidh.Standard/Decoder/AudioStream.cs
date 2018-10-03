@@ -9,12 +9,19 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder
         public abstract long TotalSamples { get; }
         public TimeSpan Duration => TimeSpan.FromSeconds(TotalSamples / (double) Format.SampleRate);
 
+        public AudioData ParentData { get; }
+
+        public override long Length => TotalSamples * Format.DataFormat.BytesPerSample * Format.Channels;
         public sealed override bool CanWrite => false;
         public sealed override bool CanRead => true;
 
+        public AudioStream(AudioData parentData)
+        {
+            ParentData = parentData;
+        }
+
         public abstract void Seek(TimeSpan timestamp);
 
-        public override long Length => TotalSamples * Format.DataFormat.BytesPerSample / 8 * Format.Channels;
         public sealed override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         public sealed override void Flush() => throw new NotSupportedException();
         public sealed override void SetLength(long value) => throw new NotSupportedException();

@@ -1,6 +1,9 @@
+using System;
+using ProjectCeilidh.Ceilidh.Standard.Decoder;
+
 namespace ProjectCeilidh.Ceilidh.Standard.Output
 {
-    public abstract class OutputDevice
+    public abstract class OutputDevice : IDisposable
     {
         /// <summary>
         /// The name of the output device.
@@ -9,6 +12,10 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output
         /// <summary>
         /// Name of the API used to access this device.
         /// </summary>
-        public abstract string Api { get; }
+        public abstract IOutputController Controller { get; }
+
+        public abstract void Play(AudioStream stream);
+
+        public virtual void Dispose() { }
     }
 }

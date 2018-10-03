@@ -58,7 +58,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
             return true;
         }
 
-        public override AudioStream GetAudioStream() => new FFmpegAudioStream(_formatContext, _streams[SelectedStream]);
+        public override AudioStream GetAudioStream() => new FFmpegAudioStream(this, _formatContext, _streams[SelectedStream]);
 
         public override void Dispose()
         {
