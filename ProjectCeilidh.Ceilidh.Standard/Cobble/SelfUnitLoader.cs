@@ -38,7 +38,8 @@ namespace ProjectCeilidh.Ceilidh.Standard.Cobble
 
             // Add everything that has a CobbleExportAttribute
             foreach (var exp in typeof(IUnitLoader).Assembly.GetExportedTypes()
-                .Where(x => (x.GetCustomAttribute<CobbleExportAttribute>()?.IsPlatform() ?? false) && !_config.ExcludeClass.Contains(x.FullName)))
+                .Where(x => (x.GetCustomAttribute<CobbleExportAttribute>()?.IsPlatform() ?? false) &&
+                            !_config.ExcludeClass.Contains(x.FullName)))
                 context.AddManaged(exp);
         }
     }

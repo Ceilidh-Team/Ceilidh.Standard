@@ -2,18 +2,15 @@
 using System.Diagnostics.Contracts;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Filter
 {
+    [CobbleExport]
     public class ReplayGainFilter : IFilterProvider
     {
         public string Name => "ReplayGain";
-
-        public ReplayGainFilter()
-        {
-
-        }
 
         public AudioStream TransformAudioStream(AudioStream stream)
         {
@@ -34,7 +31,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
             public override long TotalSamples => _baseStream.TotalSamples;
 
             private readonly AudioStream _baseStream;
-            private readonly Decibel _combinedDb;
+            private readonly double _gainRatio;
 
             public ReplayGainAudioStream(AudioStream baseStream) : base(baseStream.ParentData)
             {
@@ -47,7 +44,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
                 if (baseStream.ParentData.Metadata.TryGetValue("REPLAYGAIN_TRACK_GAIN", out var trackGainString))
                     db = new Decibel(double.Parse(Regex.Match(trackGainString, DB_REGEX).Groups["value"].Value));
 
-                _combinedDb = db;
+                _gainRatio = db.GetAmplitudeRatio();
             }
 
             public override unsafe int Read(byte[] buffer, int offset, int count)
@@ -64,11 +61,11 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
                                 case 4:
                                     for (var i = 0; i < len / 4; i++)
                                         ((float*) buf)[i] =
-                                            (float) (((float*) buf)[i] * _combinedDb.GetAmplitudeRatio());
+                                            (float) (((float*) buf)[i] * _gainRatio);
                                     break;
                                 case 8:
                                     for (var i = 0; i < len / 8; i++)
-                                        ((double*)buf)[i] *= _combinedDb.GetAmplitudeRatio();
+                                        ((double*)buf)[i] *= _gainRatio;
                                     break;
                             }
 
@@ -79,17 +76,17 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
                                 case 2:
                                     for (var i = 0; i < len / 2; i++)
                                         ((short*)buf)[i] =
-                                            (short)(((short*)buf)[i] * _combinedDb.GetAmplitudeRatio());
+                                            (short)(((short*)buf)[i] * _gainRatio);
                                     break;
                                 case 4:
                                     for (var i = 0; i < len / 4; i++)
                                         ((int*)buf)[i] =
-                                            (int)(((int*)buf)[i] * _combinedDb.GetAmplitudeRatio());
+                                            (int)(((int*)buf)[i] * _gainRatio);
                                     break;
                                 case 8:
                                     for (var i = 0; i < len / 8; i++)
                                         ((long*)buf)[i] =
-                                            (long)(((long*)buf)[i] * _combinedDb.GetAmplitudeRatio());
+                                            (long)(((long*)buf)[i] * _gainRatio);
                                     break;
                             }
                             break;
@@ -99,22 +96,22 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
                                 case 1:
                                     for (var i = 0; i < len; i++)
                                         buf[i] =
-                                            (byte)(((float*)buf)[i] * _combinedDb.GetAmplitudeRatio());
+                                            (byte)(buf[i] * _gainRatio);
                                     break;
                                 case 2:
                                     for (var i = 0; i < len / 2; i++)
                                         ((ushort*)buf)[i] =
-                                            (ushort)(((ushort*)buf)[i] * _combinedDb.GetAmplitudeRatio());
+                                            (ushort)(((ushort*)buf)[i] * _gainRatio);
                                     break;
                                 case 4:
                                     for (var i = 0; i < len / 4; i++)
                                         ((uint*)buf)[i] =
-                                            (uint)(((uint*)buf)[i] * _combinedDb.GetAmplitudeRatio());
+                                            (uint)(((uint*)buf)[i] * _gainRatio);
                                     break;
                                 case 8:
                                     for (var i = 0; i < len / 8; i++)
                                         ((ulong*)buf)[i] =
-                                            (ulong)(((ulong*)buf)[i] * _combinedDb.GetAmplitudeRatio());
+                                            (ulong)(((ulong*)buf)[i] * _gainRatio);
                                     break;
                             }
                             break;
@@ -124,10 +121,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
                 return len;
             }
 
-            public override void Seek(TimeSpan timestamp)
-            {
-                _baseStream.Seek(timestamp);
-            }
+            public override void Seek(TimeSpan timestamp) => _baseStream.Seek(timestamp);
 
             protected override void Dispose(bool disposing)
             {
@@ -137,19 +131,15 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
             }
         }
 
-        private struct Decibel
+        private readonly struct Decibel
         {
             public double Value { get; }
 
-            public Decibel(double value)
-            {
-                Value = value;
-            }
+            public Decibel(double value) => Value = value;
 
             [Pure]
             public double GetAmplitudeRatio() => Math.Pow(10, Value / 20);
 
-            [Pure]
             public static Decibel operator +(Decibel one, Decibel two)
             {
                 return new Decibel(10 * Math.Log10(Math.Pow(10, one.Value / 10) + Math.Pow(10, two.Value / 10)));
