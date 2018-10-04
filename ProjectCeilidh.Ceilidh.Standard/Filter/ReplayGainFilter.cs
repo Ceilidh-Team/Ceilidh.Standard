@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -39,19 +38,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
             }));
         }
 
-        private readonly struct Decibel
-        {
-            public double Value { get; }
-
-            public Decibel(double value) => Value = value;
-
-            [Pure]
-            public double GetAmplitudeRatio() => Math.Pow(10, Value / 20);
-
-            public static Decibel operator +(Decibel one, Decibel two)
-            {
-                return new Decibel(10 * Math.Log10(Math.Pow(10, one.Value / 10) + Math.Pow(10, two.Value / 10)));
-            }
-        }
+        
     }
 }

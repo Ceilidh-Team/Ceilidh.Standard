@@ -1,11 +1,16 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.InteropServices;
+using ProjectCeilidh.Ceilidh.Standard.Decoder;
+using ProjectCeilidh.Ceilidh.Standard.Filter;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Tools
 {
-    public unsafe class ReplayGainScanner
+    public static unsafe class ReplayGainScanner
     {
-        public Version LibEbur128Version
+        private const double TARGET_LUFS = -18;
+        
+        public static Version LibEbur128Version
         {
             get
             {
@@ -14,6 +19,67 @@ namespace ProjectCeilidh.Ceilidh.Standard.Tools
             }
         }
 
+        public static bool IsAvailable
+        {
+            get
+            {
+                try
+                {
+                    return LibEbur128Version.Major == 1;
+                }
+                catch (DllNotFoundException)
+                {
+                    return false;
+                }
+            }
+        }
+
+        public static Decibel GetSuggestedGain(AudioStream stream, double targetLufs = TARGET_LUFS)
+        {
+            if (!IsAvailable) throw new Exception();
+            
+            var state = ebur128_init((uint) stream.Format.Channels, (uint) stream.Format.SampleRate, Modes.Global);
+            try
+            {
+                var buf = new byte[stream.Format.BytesPerFrame * stream.Format.SampleRate];
+                int len;
+                fixed (byte* ptr = buf)
+                    while ((len = stream.Read(buf, 0, buf.Length)) > 0)
+                    {
+                        Error err;
+                        switch (stream.Format.DataFormat.BytesPerSample)
+                        {
+                            case 2:
+                                err = ebur128_add_frames_short(state, (short*) ptr, new IntPtr(len / stream.Format.BytesPerFrame));
+                                break;
+                            case 4 when stream.Format.DataFormat.NumberFormat == NumberFormat.FloatingPoint:
+                                err = ebur128_add_frames_float(state, (float*) ptr, new IntPtr(len / stream.Format.BytesPerFrame));
+                                break;
+                            case 4 when stream.Format.DataFormat.NumberFormat == NumberFormat.Signed:
+                                err = ebur128_add_frames_int(state, (int*) ptr, new IntPtr(len / stream.Format.BytesPerFrame));
+                                break;
+                            case 8 when stream.Format.DataFormat.NumberFormat == NumberFormat.FloatingPoint:
+                                err = ebur128_add_frames_double(state, (double*) ptr, new IntPtr(len / stream.Format.BytesPerFrame));
+                                break;
+                            default:
+                                throw new InvalidDataException();
+                        }
+                        
+                        if (err != Error.Success)
+                            throw new InvalidDataException();
+                    }
+
+                if (ebur128_loudness_global(state, out var loudness) != Error.Success)
+                    throw new InvalidDataException();
+                
+                return new Decibel(targetLufs - loudness);
+            }
+            finally
+            {
+                ebur128_destroy(ref state);
+            }
+        }
+        
         #region Native
 
         [DllImport("libebur128")]
@@ -26,22 +92,22 @@ namespace ProjectCeilidh.Ceilidh.Standard.Tools
         private static extern void ebur128_destroy(ref State* state);
 
         [DllImport("libebur128")]
-        private static extern int ebur128_set_channel(State* state, uint channelNumber, Channel value);
+        private static extern Error ebur128_set_channel(State* state, uint channelNumber, Channel value);
 
         [DllImport("libebur128")]
-        private static extern int ebur128_add_frames_short(State* state, short* src, IntPtr frames);
+        private static extern Error ebur128_add_frames_short(State* state, short* src, IntPtr frames);
 
         [DllImport("libebur128")]
-        private static extern int ebur128_add_frames_int(State* state, int* src, IntPtr frames);
+        private static extern Error ebur128_add_frames_int(State* state, int* src, IntPtr frames);
 
         [DllImport("libebur128")]
-        private static extern int ebur128_add_frames_float(State* state, float* src, IntPtr frames);
+        private static extern Error ebur128_add_frames_float(State* state, float* src, IntPtr frames);
 
         [DllImport("libebur128")]
-        private static extern int ebur128_add_frames_double(State* state, double* src, IntPtr frames);
+        private static extern Error ebur128_add_frames_double(State* state, double* src, IntPtr frames);
 
         [DllImport("libebur128")]
-        private static extern int ebur128_loudness_global(State* state, out double loudness);
+        private static extern Error ebur128_loudness_global(State* state, out double loudness);
 
         private enum Channel
         {
@@ -93,12 +159,12 @@ namespace ProjectCeilidh.Ceilidh.Standard.Tools
         [Flags]
         private enum Modes
         {
-            M = 1 << 0,
-            S = (1 << 1) | M,
-            I = (1 << 2) | M,
-            Lra = (1 << 3) | S,
-            SamplePeak = (1 << 4) | M,
-            TruePeak = (1 << 5) | M | SamplePeak,
+            Momentary = 1 << 0,
+            ShortTerm = (1 << 1) | Momentary,
+            Global = (1 << 2) | Momentary,
+            LoudnessRange = (1 << 3) | ShortTerm,
+            SamplePeak = (1 << 4) | Momentary,
+            TruePeak = (1 << 5) | Momentary | SamplePeak,
             Histogram = 1 << 6
         }
 

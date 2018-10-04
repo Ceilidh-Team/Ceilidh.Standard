@@ -25,22 +25,24 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Universal
 
         public IEnumerable<OutputDevice> GetOutputDevices()
         {
-            yield return new DummyOutputDevice(_localization);
+            yield return new DummyOutputDevice(this, _localization);
         }
 
         private class DummyOutputDevice : OutputDevice
         {
             public override string Name { get; }
             public override IOutputController Controller { get; }
+            public override bool IsDefault => true;
 
-            public DummyOutputDevice(ILocalizationController localization)
+            public DummyOutputDevice(IOutputController controller, ILocalizationController localization)
             {
                 Name = localization.Translate(DUMMY_NAME_KEY);
+                Controller = controller;
             }
 
             public override PlaybackHandle Init(AudioStream stream)
             {
-                return new DummyPlaybackHandle();
+                return new DummyPlaybackHandle(stream);
             }
 
             public override void Dispose() { }
@@ -50,6 +52,11 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Universal
         {
             public override AudioStream BaseStream { get; }
 
+            public DummyPlaybackHandle(AudioStream baseStream)
+            {
+                BaseStream = baseStream;
+            }
+            
             public override void Start()
             {
                 throw new NotImplementedException();
@@ -67,7 +74,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Universal
 
             public override void Dispose()
             {
-                throw new NotImplementedException();
+                BaseStream.Dispose();
             }
 
             public override event PlaybackEndEventHandler PlaybackEnd;

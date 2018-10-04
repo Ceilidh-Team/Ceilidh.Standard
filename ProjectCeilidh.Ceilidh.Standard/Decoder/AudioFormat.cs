@@ -1,10 +1,25 @@
 ﻿namespace ProjectCeilidh.Ceilidh.Standard.Decoder
 {
+    /// <summary>
+    /// Represents the parameters of an AudioStream.
+    /// </summary>
     public struct AudioFormat
     {
+        /// <summary>
+        /// The number of bytes in a single frame of data (Channels * BytesPerSample)
+        /// </summary>
+        public int BytesPerFrame => Channels * DataFormat.BytesPerSample;
+        /// <summary>
+        /// The bitrate of the raw PCM data
+        /// </summary>
+        public int Bitrate => SampleRate * BytesPerFrame * 8;
+        
         public readonly int SampleRate, Channels;
+        /// <summary>
+        /// The format of the underlying PCM data
+        /// </summary>
         public readonly AudioDataFormat DataFormat;
-
+        
         public AudioFormat(int sampleRate, int channels, AudioDataFormat dataFormat)
         {
             SampleRate = sampleRate;
@@ -54,24 +69,5 @@
         {
             return $"{NumberFormat}, {(BigEndian ? "Big Endian" : "Little Endian")}, {BytesPerSample * 8}-bit";
         }
-
-        /*Unsigned = 0x0000,
-        Signed = 0x0100,
-        FloatingPoint = 0x0200,
-        BigEndian = 0x0000,
-        LittleEndian = 0x1000,
-
-        Unsigned8 = Unsigned | 8,
-        Signed8 = Signed | 8,
-        Signed16BigEndian = Signed | BigEndian | 16,
-        Signed16LittleEndian = Signed | LittleEndian | 16,
-        Signed24BigEndian = Signed | BigEndian | 24,
-        Signed24LittleEndian = Signed | LittleEndian | 24,
-        Signed32BigEndian = Signed | BigEndian | 32,
-        Signed32LittleEndian = Signed | LittleEndian | 32,
-        Float32BigEndian = FloatingPoint | BigEndian | 32,
-        Float32LittleEndian = FloatingPoint | LittleEndian | 32,
-        Float64BigEndian = FloatingPoint | BigEndian | 64,
-        Float64LittleEndian = FloatingPoint | LittleEndian | 64*/
     }
 }

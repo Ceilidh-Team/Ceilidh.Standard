@@ -75,8 +75,17 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
             
             public XAudio2PlaybackHandle(int deviceId, AudioStream stream)
             {
-                _xAudio2 = new XAudio2(XAudio2Version.Version27);
-                _masteringVoice = deviceId == -1 ? new MasteringVoice(_xAudio2) : new MasteringVoice(_xAudio2, XAudio2.DefaultChannels, XAudio2.DefaultSampleRate, deviceId);
+                if (deviceId == -1)
+                {
+                    _xAudio2 = new XAudio2();
+                    _masteringVoice = new MasteringVoice(_xAudio2);
+                }
+                else
+                {
+                    _xAudio2 = new XAudio2(XAudio2Version.Version27);
+                    _masteringVoice = new MasteringVoice(_xAudio2, XAudio2.DefaultChannels, XAudio2.DefaultSampleRate, deviceId);
+                }
+                
                 _sourceVoice = new SourceVoice(_xAudio2, WaveFormat.CreateCustomFormat(
                     stream.Format.DataFormat.NumberFormat == NumberFormat.FloatingPoint
                         ? WaveFormatEncoding.IeeeFloat
@@ -85,12 +94,12 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
                     stream.Format.Channels * stream.Format.DataFormat.BytesPerSample,
                     stream.Format.DataFormat.BytesPerSample * 8), true);
                 
-                _sourceVoice.BufferEnd += QueueBufferData;
+                _sourceVoice.BufferStart += QueueBufferData;
 
                 BaseStream = stream;
-                _audioBuffer = new byte[stream.Format.SampleRate * stream.Format.Channels * stream.Format.DataFormat.BytesPerSample];
+                _audioBuffer = new byte[stream.Format.SampleRate * stream.Format.Channels *
+                                        stream.Format.DataFormat.BytesPerSample];
                 
-                QueueBufferData();
                 QueueBufferData();
             }
 
@@ -100,7 +109,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
                 var len = BaseStream.Read(_audioBuffer, 0, _audioBuffer.Length);
                 if (len <= 0)
                 {
-                    _sourceVoice.BufferEnd -= QueueBufferData;
+                    _sourceVoice.BufferStart -= QueueBufferData;
                     _sourceVoice.Discontinuity();
                     PlaybackEnd?.Invoke(this, EventArgs.Empty);
                     return;
@@ -118,13 +127,9 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
             public override void Seek(TimeSpan position)
             {
                 _sourceVoice.Stop();
-                _sourceVoice.BufferEnd -= QueueBufferData;
                 _sourceVoice.FlushSourceBuffers();
                 BaseStream.Seek(position);
 
-                _sourceVoice.BufferEnd += QueueBufferData;
-                
-                QueueBufferData();
                 QueueBufferData();
                 _sourceVoice.Start();
             }
