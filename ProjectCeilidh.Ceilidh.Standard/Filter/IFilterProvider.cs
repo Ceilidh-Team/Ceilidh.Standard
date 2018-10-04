@@ -7,5 +7,5 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
         string Name { get; }
 
         AudioStream TransformAudioStream(AudioStream stream);
-    }
+    } 
 }

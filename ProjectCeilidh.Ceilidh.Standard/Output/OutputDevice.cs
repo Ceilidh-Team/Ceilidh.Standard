@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Output
@@ -11,6 +10,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output
         /// </summary>
         public abstract string Name { get; }
         public abstract IOutputController Controller { get; }
+        public abstract bool IsDefault { get; }
 
         public abstract PlaybackHandle Init(AudioStream stream);
 

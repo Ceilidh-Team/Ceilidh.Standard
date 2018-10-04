@@ -29,8 +29,8 @@ namespace ProjectCeilidh.Ceilidh.Standard.Localization
                         ["ffmpeg.error.unknown"] = new[] { "An unknown error has occurred within FFmpeg while executing \"{0}\"" },
                         ["ffmpeg.error.averror"] = new[] { "FFmpeg function \"{0}\" returned non-success error code {1}" },
 
-                        /*[DummyOutputController.DUMMY_NAME_KEY] = new []{ "Dummy Output" },
-                        [DummyOutputController.DUMMY_API_NAME_KEY] = new[] { "Dummy" },*/
+                        [DummyOutputController.DUMMY_NAME_KEY] = new []{ "Dummy Output" },
+                        [DummyOutputController.DUMMY_API_NAME_KEY] = new[] { "Dummy" },
                     };
                 default: return null;
             }

@@ -1,134 +1,42 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Security.Cryptography.X509Certificates;
+using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
+using ProjectCeilidh.Ceilidh.Standard.Filter.FFmpeg;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Filter
 {
     [CobbleExport]
     public class ReplayGainFilter : IFilterProvider
     {
+        private const string DB_REGEX = @"(?<value>-?\d+(?:\.\d+)?) dB";
+
         public string Name => "ReplayGain";
 
         public AudioStream TransformAudioStream(AudioStream stream)
         {
-            return new ReplayGainAudioStream(stream);
-        }
+            var db = new Decibel(0);
 
-        private class ReplayGainAudioStream : AudioStream
-        {
-            private const string DB_REGEX = @"(?<value>-?\d+(?:\.\d+)?) dB";
+            var albumGainString = stream.ParentData.Metadata.FirstOrDefault(x =>
+                x.Key.Equals("REPLAYGAIN_ALBUM_GAIN", StringComparison.InvariantCultureIgnoreCase)).Value;
+            var trackGainString = stream.ParentData.Metadata.FirstOrDefault(x =>
+                x.Key.Equals("REPLAYGAIN_TRACK_GAIN", StringComparison.InvariantCultureIgnoreCase)).Value;
 
-            public override bool CanSeek => _baseStream.CanSeek;
-            public override long Position
+            if (albumGainString != null)
+                db = new Decibel(double.Parse(Regex.Match(albumGainString, DB_REGEX).Groups["value"].Value));
+            if (trackGainString != null)
+                db = new Decibel(double.Parse(Regex.Match(trackGainString, DB_REGEX).Groups["value"].Value));
+
+            var ratio = db.GetAmplitudeRatio();
+
+            return new FFmpegFilterAudioStream(stream, stream.Format, new FilterConfiguration("volume", new Dictionary<string, string>
             {
-                get => _baseStream.Position;
-                set => _baseStream.Position = value;
-            }
-            public override AudioFormat Format => _baseStream.Format;
-            public override long TotalSamples => _baseStream.TotalSamples;
-
-            private readonly AudioStream _baseStream;
-            private readonly double _gainRatio;
-
-            public ReplayGainAudioStream(AudioStream baseStream) : base(baseStream.ParentData)
-            {
-                _baseStream = baseStream;
-
-                var db = new Decibel(0);
-
-                if (baseStream.ParentData.Metadata.TryGetValue("REPLAYGAIN_ALBUM_GAIN", out var albumGainString))
-                    db = new Decibel(double.Parse(Regex.Match(albumGainString, DB_REGEX).Groups["value"].Value));
-                if (baseStream.ParentData.Metadata.TryGetValue("REPLAYGAIN_TRACK_GAIN", out var trackGainString))
-                    db = new Decibel(double.Parse(Regex.Match(trackGainString, DB_REGEX).Groups["value"].Value));
-
-                _gainRatio = db.GetAmplitudeRatio();
-            }
-
-            public override unsafe int Read(byte[] buffer, int offset, int count)
-            {
-                var len = _baseStream.Read(buffer, offset, count);
-
-                fixed (byte* buf = &buffer[offset])
-                {
-                    switch (Format.DataFormat.NumberFormat)
-                    {
-                        case NumberFormat.FloatingPoint:
-                            switch (Format.DataFormat.BytesPerSample)
-                            {
-                                case 4:
-                                    for (var i = 0; i < len / 4; i++)
-                                        ((float*) buf)[i] =
-                                            (float) (((float*) buf)[i] * _gainRatio);
-                                    break;
-                                case 8:
-                                    for (var i = 0; i < len / 8; i++)
-                                        ((double*)buf)[i] *= _gainRatio;
-                                    break;
-                            }
-
-                            break;
-                        case NumberFormat.Signed:
-                            switch (Format.DataFormat.BytesPerSample)
-                            {
-                                case 2:
-                                    for (var i = 0; i < len / 2; i++)
-                                        ((short*)buf)[i] =
-                                            (short)(((short*)buf)[i] * _gainRatio);
-                                    break;
-                                case 4:
-                                    for (var i = 0; i < len / 4; i++)
-                                        ((int*)buf)[i] =
-                                            (int)(((int*)buf)[i] * _gainRatio);
-                                    break;
-                                case 8:
-                                    for (var i = 0; i < len / 8; i++)
-                                        ((long*)buf)[i] =
-                                            (long)(((long*)buf)[i] * _gainRatio);
-                                    break;
-                            }
-                            break;
-                        case NumberFormat.Unsigned:
-                            switch (Format.DataFormat.BytesPerSample)
-                            {
-                                case 1:
-                                    for (var i = 0; i < len; i++)
-                                        buf[i] =
-                                            (byte)(buf[i] * _gainRatio);
-                                    break;
-                                case 2:
-                                    for (var i = 0; i < len / 2; i++)
-                                        ((ushort*)buf)[i] =
-                                            (ushort)(((ushort*)buf)[i] * _gainRatio);
-                                    break;
-                                case 4:
-                                    for (var i = 0; i < len / 4; i++)
-                                        ((uint*)buf)[i] =
-                                            (uint)(((uint*)buf)[i] * _gainRatio);
-                                    break;
-                                case 8:
-                                    for (var i = 0; i < len / 8; i++)
-                                        ((ulong*)buf)[i] =
-                                            (ulong)(((ulong*)buf)[i] * _gainRatio);
-                                    break;
-                            }
-                            break;
-                    }
-                }
-
-                return len;
-            }
-
-            public override void Seek(TimeSpan timestamp) => _baseStream.Seek(timestamp);
-
-            protected override void Dispose(bool disposing)
-            {
-                _baseStream.Dispose();
-
-                base.Dispose(disposing);
-            }
+                ["volume"] = ratio.ToString(CultureInfo.InvariantCulture)
+            }));
         }
 
         private readonly struct Decibel

@@ -179,7 +179,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
 
         public override void Seek(TimeSpan timestamp)
         {
-            var ts = (long) (timestamp.TotalSeconds * _stream->time_base.num / _stream->time_base.den);
+            var ts = (long) (timestamp.TotalSeconds / (_stream->time_base.num / (double)_stream->time_base.den));
 
             if (avformat_seek_file(_formatContext, _stream->index, 0, ts, ts, AVSEEK_FLAG_ANY) < 0)
                 throw new Exception(); // TODO

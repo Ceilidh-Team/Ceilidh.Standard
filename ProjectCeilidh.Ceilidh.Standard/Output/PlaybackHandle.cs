@@ -8,8 +8,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output
         public delegate void PlaybackEndEventHandler(object source, EventArgs e);
 
         public abstract AudioStream BaseStream { get; }
-        public abstract long SamplesPlayed { get; }
-        public TimeSpan PlaybackPosition => TimeSpan.FromSeconds(SamplesPlayed / (double) BaseStream.Format.SampleRate);
         
         public abstract void Start();
         public abstract void Seek(TimeSpan position);

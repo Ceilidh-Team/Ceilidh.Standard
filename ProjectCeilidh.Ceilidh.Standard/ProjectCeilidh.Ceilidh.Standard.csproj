@@ -14,5 +14,16 @@
 
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <None Update="Decoder\FFmpeg\lib\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+    <None Update="Tools\lib\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.TestPlatform.Common">
+      <HintPath>C:\Users\olivia\.nuget\packages\microsoft.testplatform.testhost\15.8.0\lib\netstandard1.5\Microsoft.VisualStudio.TestPlatform.Common.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Tools\lib\" />
   </ItemGroup>
 </Project>

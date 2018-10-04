@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 using ProjectCeilidh.Ceilidh.Standard.Filter;
@@ -19,29 +21,29 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
 
         private readonly XAudio2 _xAudio2;
 
-        public XAudio2OutputController(ILibraryController library, IDecoderController decoder)
+        public XAudio2OutputController()
         {
             _xAudio2 = new XAudio2(XAudio2Version.Version27);
-
-            var dev = GetOutputDevices().ToArray();
-
-            if (library.TryGetSource(@"G:\Audiophile Library\Perturbator\PERTURBATOR - Cult of Luna & Julie Christmas - Cygnus (Perturbator remix).flac", out var source) && decoder.TryDecode(source, out var data) &&
-                data.TrySelectStream(0))
-            {
-                dev[0].Init(new ReplayGainFilter().TransformAudioStream(data.GetAudioStream())).Start();
-            }
         }
 
         public IEnumerable<OutputDevice> GetOutputDevices()
         {
+            var res = new XAudio2OutputDevice[_xAudio2.DeviceCount + 1];
+
             for (var i = 0; i < _xAudio2.DeviceCount; i++)
-                yield return new XAudio2OutputDevice(this, i, _xAudio2.GetDeviceDetails(i));
+                res[i] = new XAudio2OutputDevice(this, i, _xAudio2.GetDeviceDetails(i));
+
+            res[res.Length - 1] = new XAudio2OutputDevice(this, -1, res.Take(res.Length - 1).Single(x => x.Details.Role == DeviceRole.DefaultMultimediaDevice).Details);
+
+            return res;
         }
 
         private class XAudio2OutputDevice : OutputDevice
         {
             public override string Name { get; }
             public override IOutputController Controller { get; }
+            public override bool IsDefault => _deviceId == -1;
+            public DeviceDetails Details { get; }
 
             private readonly int _deviceId;
 
@@ -49,6 +51,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
             {
                 Name = details.DisplayName;
                 Controller = controller;
+                Details = details;
 
                 _deviceId = deviceId;
             }
@@ -64,7 +67,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
         private class XAudio2PlaybackHandle : PlaybackHandle
         {
             public override AudioStream BaseStream { get; }
-            public override long SamplesPlayed => _sourceVoice.State.SamplesPlayed;
 
             private readonly XAudio2 _xAudio2;
             private readonly MasteringVoice _masteringVoice;
@@ -74,7 +76,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
             public XAudio2PlaybackHandle(int deviceId, AudioStream stream)
             {
                 _xAudio2 = new XAudio2(XAudio2Version.Version27);
-                _masteringVoice = new MasteringVoice(_xAudio2, XAudio2.DefaultChannels, XAudio2.DefaultSampleRate, deviceId);
+                _masteringVoice = deviceId == -1 ? new MasteringVoice(_xAudio2) : new MasteringVoice(_xAudio2, XAudio2.DefaultChannels, XAudio2.DefaultSampleRate, deviceId);
                 _sourceVoice = new SourceVoice(_xAudio2, WaveFormat.CreateCustomFormat(
                     stream.Format.DataFormat.NumberFormat == NumberFormat.FloatingPoint
                         ? WaveFormatEncoding.IeeeFloat
