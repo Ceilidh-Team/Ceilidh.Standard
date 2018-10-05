@@ -37,65 +37,70 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter.FFmpeg
 
         public FFmpegFilterAudioStream(AudioStream baseAudioStream, AudioFormat outputFormat, params FilterConfiguration[] filterOptions) : base(baseAudioStream.ParentData)
         {
-            Format = outputFormat;
-
-            _baseAudioStream = baseAudioStream;
-            var filters = new AVFilter*[filterOptions.Length];
-            var filterContexts = new AVFilterContext*[filterOptions.Length];
-
-            _filterGraph = avfilter_graph_alloc();
-
-            _abufferContext = avfilter_graph_alloc_filter(_filterGraph, ABufferFilter, "src");
-
-            av_opt_set(_abufferContext, "channel_layout", $"{baseAudioStream.Format.Channels}c",
-                AV_OPT_SEARCH_CHILDREN);
-            av_opt_set(_abufferContext, "sample_fmt",
-                av_get_sample_fmt_name(baseAudioStream.Format.DataFormat.GetSampleFormat()), AV_OPT_SEARCH_CHILDREN);
-            av_opt_set_q(_abufferContext, "time_base",
-                new AVRational {num = 1, den = baseAudioStream.Format.SampleRate}, AV_OPT_SEARCH_CHILDREN);
-            av_opt_set_int(_abufferContext, "sample_rate", baseAudioStream.Format.SampleRate, AV_OPT_SEARCH_CHILDREN);
-
-            avfilter_init_str(_abufferContext, null); // TODO: error code
-
-            for (var i = 0; i < filterOptions.Length; i++)
+            lock (FFmpegDecoder.SyncObject)
             {
-                filters[i] = avfilter_get_by_name(filterOptions[i].Name);
-                filterContexts[i] = avfilter_graph_alloc_filter(_filterGraph, filters[i], null);
+                Format = outputFormat;
 
-                foreach (var (key, value) in filterOptions[i].Options)
-                    av_opt_set(filterContexts[i], key, value, AV_OPT_SEARCH_CHILDREN);
+                _baseAudioStream = baseAudioStream;
+                var filters = new AVFilter*[filterOptions.Length];
+                var filterContexts = new AVFilterContext*[filterOptions.Length];
 
-                avfilter_init_str(filterContexts[i], null); // TODO: error code
+                _filterGraph = avfilter_graph_alloc();
+
+                _abufferContext = avfilter_graph_alloc_filter(_filterGraph, ABufferFilter, "src");
+
+                av_opt_set(_abufferContext, "channel_layout", $"{baseAudioStream.Format.Channels}c",
+                    AV_OPT_SEARCH_CHILDREN);
+                av_opt_set(_abufferContext, "sample_fmt",
+                    av_get_sample_fmt_name(baseAudioStream.Format.DataFormat.GetSampleFormat()),
+                    AV_OPT_SEARCH_CHILDREN);
+                av_opt_set_q(_abufferContext, "time_base",
+                    new AVRational {num = 1, den = baseAudioStream.Format.SampleRate}, AV_OPT_SEARCH_CHILDREN);
+                av_opt_set_int(_abufferContext, "sample_rate", baseAudioStream.Format.SampleRate,
+                    AV_OPT_SEARCH_CHILDREN);
+
+                avfilter_init_str(_abufferContext, null); // TODO: error code
+
+                for (var i = 0; i < filterOptions.Length; i++)
+                {
+                    filters[i] = avfilter_get_by_name(filterOptions[i].Name);
+                    filterContexts[i] = avfilter_graph_alloc_filter(_filterGraph, filters[i], null);
+
+                    foreach (var (key, value) in filterOptions[i].Options)
+                        av_opt_set(filterContexts[i], key, value, AV_OPT_SEARCH_CHILDREN);
+
+                    avfilter_init_str(filterContexts[i], null); // TODO: error code
+                }
+
+                _abuffersinkContext = avfilter_graph_alloc_filter(_filterGraph, ABufferSinkFilter, "sink");
+
+                avfilter_init_str(_abuffersinkContext, null); // TODO: error code
+
+                for (var i = 0; i <= filterOptions.Length; i++)
+                {
+                    if (i == 0)
+                        avfilter_link(_abufferContext, 0, filterContexts[i], 0); // TODO: error code
+                    else if (i == filterOptions.Length)
+                        avfilter_link(filterContexts[i - 1], 0, _abuffersinkContext, 0); // TODO: error code
+                    else
+                        avfilter_link(filterContexts[i - 1], 0, filterContexts[i], 0); // TODO: error code
+                }
+
+                avfilter_graph_config(_filterGraph, null); // TODO: error code
+
+                _frame = av_frame_alloc();
             }
-
-            _abuffersinkContext = avfilter_graph_alloc_filter(_filterGraph, ABufferSinkFilter, "sink");
-
-            avfilter_init_str(_abuffersinkContext, null); // TODO: error code
-
-            for (var i = 0; i <= filterOptions.Length; i++)
-            {
-                if (i == 0)
-                    avfilter_link(_abufferContext, 0, filterContexts[i], 0); // TODO: error code
-                else if (i == filterOptions.Length)
-                    avfilter_link(filterContexts[i - 1], 0, _abuffersinkContext, 0); // TODO: error code
-                else
-                    avfilter_link(filterContexts[i - 1], 0, filterContexts[i], 0); // TODO: error code
-            }
-
-            avfilter_graph_config(_filterGraph, null); // TODO: error code
-
-            _frame = av_frame_alloc();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (_extraData != null)
             {
-                var readLen = Math.Min(buffer.Length, _extraData.Length - _extraPtr);
+                var readLen = Math.Min(count, _extraData.Length - _extraPtr);
 
-                fixed (byte* bufPtr = buffer)
+                fixed (byte* bufPtr = &buffer[_extraPtr])
                 fixed (byte* oldPtr = &_extraData[_extraPtr])
-                    Buffer.MemoryCopy(oldPtr, bufPtr, buffer.Length, readLen);
+                    Buffer.MemoryCopy(oldPtr, bufPtr, count, readLen);
 
                 _extraPtr += readLen;
                 if (_extraPtr >= _extraData.Length)
@@ -104,64 +109,70 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter.FFmpeg
                 return readLen;
             }
 
-            int recieveError;
-            while ((recieveError = av_buffersink_get_frame(_abuffersinkContext, _frame)) == -EAgain)
+            lock (FFmpegDecoder.SyncObject)
             {
-                var buf = new byte[count];
 
-                var readLen = _baseAudioStream.Read(buf, 0, buf.Length);
+                int recieveError;
+                while ((recieveError = av_buffersink_get_frame(_abuffersinkContext, _frame)) == -EAgain)
+                {
+                    var buf = new byte[count];
 
-                if (readLen == 0) return 0;
+                    var readLen = _baseAudioStream.Read(buf, 0, buf.Length);
 
-                _frame->sample_rate = _baseAudioStream.Format.SampleRate;
-                _frame->format = (int)_baseAudioStream.Format.DataFormat.GetSampleFormat();
-                _frame->channel_layout = unchecked((ulong)av_get_default_channel_layout(_baseAudioStream.Format.Channels));
-                _frame->pts = _samplePosition;
-                _frame->nb_samples = readLen / _baseAudioStream.Format.Channels / _baseAudioStream.Format.DataFormat.BytesPerSample;
-                _samplePosition += _frame->nb_samples;
+                    if (readLen == 0) return 0;
 
-                av_frame_get_buffer(_frame, 0);
+                    _frame->sample_rate = _baseAudioStream.Format.SampleRate;
+                    _frame->format = (int) _baseAudioStream.Format.DataFormat.GetSampleFormat();
+                    _frame->channel_layout =
+                        unchecked((ulong) av_get_default_channel_layout(_baseAudioStream.Format.Channels));
+                    _frame->pts = _samplePosition;
+                    _frame->nb_samples = readLen / _baseAudioStream.Format.Channels /
+                                         _baseAudioStream.Format.DataFormat.BytesPerSample;
+                    _samplePosition += _frame->nb_samples;
 
-                fixed(byte* ptr = buf)
-                    Buffer.MemoryCopy(ptr, _frame->extended_data[0], readLen, readLen);
+                    av_frame_get_buffer(_frame, 0);
 
-                av_buffersrc_add_frame(_abufferContext, _frame); // TODO: handle error
-            }
+                    fixed (byte* ptr = buf)
+                        Buffer.MemoryCopy(ptr, _frame->extended_data[0], readLen, readLen);
 
-            switch (recieveError)
-            {
-                case var eof when eof == AVERROR_EOF:
-                    return 0;
-                case -EINVAL:
-                    throw new ObjectDisposedException(nameof(AVCodec));
-                case var code when code < 0:
-                    throw new Exception(); // TODO
-                default:
-                    var bps = Format.DataFormat.BytesPerSample;
+                    av_buffersrc_add_frame(_abufferContext, _frame); // TODO: handle error
+                }
 
-                    try
-                    {
-                        fixed (byte* bufPtr = &buffer[offset])
+                switch (recieveError)
+                {
+                    case var eof when eof == AVERROR_EOF:
+                        return 0;
+                    case -EINVAL:
+                        throw new ObjectDisposedException(nameof(AVCodec));
+                    case var code when code < 0:
+                        throw new Exception(); // TODO
+                    default:
+                        var bps = Format.DataFormat.BytesPerSample;
+
+                        try
                         {
-                            var extLen = _frame->nb_samples * bps * _frame->channels;
+                            fixed (byte* bufPtr = &buffer[offset])
+                            {
+                                var extLen = _frame->nb_samples * bps * _frame->channels;
 
-                            var readLen = Math.Min(extLen, buffer.Length);
-                            Buffer.MemoryCopy(_frame->extended_data[0], bufPtr, buffer.Length, readLen);
+                                var readLen = Math.Min(extLen, count);
+                                Buffer.MemoryCopy(_frame->extended_data[0], bufPtr, count, readLen);
 
-                            if (readLen != buffer.Length || readLen == extLen) return readLen;
+                                if (readLen != count || readLen == extLen) return readLen;
 
-                            _extraPtr = 0;
-                            fixed (byte* extraPtr = _extraData = new byte[extLen - readLen])
-                                Buffer.MemoryCopy(_frame->extended_data[0] + readLen, extraPtr, extLen - readLen,
-                                    extLen - readLen);
+                                _extraPtr = 0;
+                                fixed (byte* extraPtr = _extraData = new byte[extLen - readLen])
+                                    Buffer.MemoryCopy(_frame->extended_data[0] + readLen, extraPtr, extLen - readLen,
+                                        extLen - readLen);
 
-                            return readLen;
+                                return readLen;
+                            }
                         }
-                    }
-                    finally
-                    {
-                        av_frame_unref(_frame);
-                    }
+                        finally
+                        {
+                            av_frame_unref(_frame);
+                        }
+                }
             }
         }
         
@@ -169,10 +180,13 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter.FFmpeg
 
         protected override void Dispose(bool disposing)
         {
-            fixed (AVFilterGraph** graph = &_filterGraph)
-                avfilter_graph_free(graph);
-            fixed (AVFrame** frame = &_frame)
-                av_frame_free(frame);
+            lock (FFmpegDecoder.SyncObject)
+            {
+                fixed (AVFilterGraph** graph = &_filterGraph)
+                    avfilter_graph_free(graph);
+                fixed (AVFrame** frame = &_frame)
+                    av_frame_free(frame);
+            }
 
             base.Dispose(disposing);
         }

@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
-using ProjectCeilidh.Ceilidh.Standard.Filter;
-using ProjectCeilidh.Ceilidh.Standard.Library;
 using SharpDX;
 using SharpDX.Multimedia;
 using SharpDX.XAudio2;
@@ -28,12 +24,12 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
 
         public IEnumerable<OutputDevice> GetOutputDevices()
         {
-            var res = new XAudio2OutputDevice[_xAudio2.DeviceCount + 1];
+            var res = new XAudio2OutputDevice[_xAudio2.DeviceCount];
 
             for (var i = 0; i < _xAudio2.DeviceCount; i++)
                 res[i] = new XAudio2OutputDevice(this, i, _xAudio2.GetDeviceDetails(i));
 
-            res[res.Length - 1] = new XAudio2OutputDevice(this, -1, res.Take(res.Length - 1).Single(x => x.Details.Role == DeviceRole.DefaultMultimediaDevice).Details);
+            res[res.Length - 1] = new XAudio2OutputDevice(this, -1, res.Take(res.Length - 1).Single(x => x.Details.Role.HasFlag(DeviceRole.DefaultMultimediaDevice)).Details);
 
             return res;
         }
@@ -71,8 +67,9 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
             private readonly XAudio2 _xAudio2;
             private readonly MasteringVoice _masteringVoice;
             private readonly SourceVoice _sourceVoice;
-            private readonly byte[] _audioBuffer;
-            
+            private volatile bool _playing;
+            private volatile bool _ending;
+
             public XAudio2PlaybackHandle(int deviceId, AudioStream stream)
             {
                 if (deviceId == -1)
@@ -94,54 +91,77 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Windows
                     stream.Format.Channels * stream.Format.DataFormat.BytesPerSample,
                     stream.Format.DataFormat.BytesPerSample * 8), true);
                 
-                _sourceVoice.BufferStart += QueueBufferData;
+                _sourceVoice.BufferEnd += PushBuffer;
 
                 BaseStream = stream;
-                _audioBuffer = new byte[stream.Format.SampleRate * stream.Format.Channels *
-                                        stream.Format.DataFormat.BytesPerSample];
-                
-                QueueBufferData();
             }
 
-            private void QueueBufferData() => QueueBufferData(IntPtr.Zero);
-            private unsafe void QueueBufferData(IntPtr _)
+            private unsafe void PushBuffer(IntPtr context)
             {
-                var len = BaseStream.Read(_audioBuffer, 0, _audioBuffer.Length);
+                if (context != IntPtr.Zero)
+                    Marshal.FreeHGlobal(context);
+
+                if (_ending) PlaybackEnd?.Invoke(this, EventArgs.Empty);
+
+                if (!_playing) return;
+
+                var buf = new byte[BaseStream.Format.BytesPerFrame * 44100];
+                var len = BaseStream.Read(buf, 0, buf.Length);
+
                 if (len <= 0)
                 {
-                    _sourceVoice.BufferStart -= QueueBufferData;
                     _sourceVoice.Discontinuity();
-                    PlaybackEnd?.Invoke(this, EventArgs.Empty);
+                    _playing = false;
+                    _ending = true;
                     return;
                 }
 
-                fixed (byte* ptr = _audioBuffer)
-                    _sourceVoice.SubmitSourceBuffer(new AudioBuffer(new DataPointer(ptr, len)), null);
+                var hGlobal = Marshal.AllocHGlobal(len);
+                fixed (byte* ptr = buf)
+                    Buffer.MemoryCopy(ptr, hGlobal.ToPointer(), len, len);
+
+                _sourceVoice.SubmitSourceBuffer(new AudioBuffer(new DataPointer(hGlobal, len)) {Context = hGlobal},
+                    null);
             }
 
             public override void Start()
             {
+                _playing = true;
                 _sourceVoice.Start();
+
+                if (_sourceVoice.State.BuffersQueued == 0)
+                {
+                    PushBuffer(IntPtr.Zero);
+                    PushBuffer(IntPtr.Zero);
+                }
             }
 
             public override void Seek(TimeSpan position)
             {
+                _playing = false;
                 _sourceVoice.Stop();
                 _sourceVoice.FlushSourceBuffers();
                 BaseStream.Seek(position);
 
-                QueueBufferData();
+                while (_sourceVoice.State.BuffersQueued != 0) { } // spinwait
+
+                _playing = true;
+
+                PushBuffer(IntPtr.Zero);
+                PushBuffer(IntPtr.Zero);
+
                 _sourceVoice.Start();
             }
 
             public override void Stop()
             {
+                _playing = false;
                 _sourceVoice.Stop();
             }
 
             public override void Dispose()
             {
-                _sourceVoice.BufferEnd -= QueueBufferData;
+                _sourceVoice.BufferEnd -= PushBuffer;
                 
                 _xAudio2.Dispose();
                 _masteringVoice.Dispose();

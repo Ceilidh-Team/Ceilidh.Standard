@@ -1,4 +1,5 @@
 using System;
+using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 using ProjectCeilidh.Ceilidh.Standard.Localization;
 using ProjectCeilidh.Ceilidh.Standard.Tools;
@@ -8,6 +9,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
     /// <summary>
     /// Implement ReplayGain volume normalization dynamically as data arrives
     /// </summary>
+    [CobbleExport]
     public class ReplayGainAdaptiveFilter : IFilterProvider
     {
         public string Name { get; }
@@ -21,7 +23,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
 
         private unsafe class ReplayGainAdaptiveAudioStream : AudioStream
         {
-            private const double ALPHA = .7; 
+            private const double ALPHA = .5, MAX_DB = 0;
             
             public override bool CanSeek => _baseAudioStream.CanSeek;
             public override long Position
@@ -66,7 +68,8 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
             {
                 var len = _baseAudioStream.Read(buffer, offset, count);
                 _ebuR128State.AddFrames(buffer, offset, len);
-                _currentGain = new Decibel(_currentGain.Value * ALPHA + (1 - ALPHA) * (_target.Value - _ebuR128State.GetLoudness()));
+                _currentGain = new Decibel(Math.Min(MAX_DB, _currentGain.Value * ALPHA + (1 - ALPHA) * (_target.Value - _ebuR128State.GetLoudness())));
+                Console.WriteLine("Current Gain: {0} dB", _currentGain.Value);
 
                 _transformFunc(buffer, offset, len, _currentGain.GetAmplitudeRatio());
 

@@ -6,7 +6,7 @@ using ProjectCeilidh.Ceilidh.Standard.Localization;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Output.Universal
 {
-    [CobbleExport]
+    // [CobbleExport]
     public class DummyOutputController : IOutputController
     {
         internal const string DUMMY_NAME_KEY = "output.dummy";

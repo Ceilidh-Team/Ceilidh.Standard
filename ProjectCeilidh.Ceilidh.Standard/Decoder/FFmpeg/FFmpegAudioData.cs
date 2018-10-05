@@ -13,17 +13,21 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
         {
             get
             {
-                var metadataDict = _streams[_selectedStream]->metadata;
-                if (metadataDict == null)
-                    metadataDict = _formatContext->metadata;
+                lock (FFmpegDecoder.SyncObject)
+                {
+                    var metadataDict = _streams[_selectedStream]->metadata;
+                    if (metadataDict == null)
+                        metadataDict = _formatContext->metadata;
 
-                var dict = new Dictionary<string, string>();
+                    var dict = new Dictionary<string, string>();
 
-                AVDictionaryEntry* entry = null;
-                while ((entry = av_dict_get(metadataDict, "", entry, AV_DICT_IGNORE_SUFFIX)) != null)
-                    dict.Add(Marshal.PtrToStringAnsi(new IntPtr(entry->key)), Marshal.PtrToStringAnsi(new IntPtr(entry->value)));
+                    AVDictionaryEntry* entry = null;
+                    while ((entry = av_dict_get(metadataDict, "", entry, AV_DICT_IGNORE_SUFFIX)) != null)
+                        dict.Add(Marshal.PtrToStringAnsi(new IntPtr(entry->key)),
+                            Marshal.PtrToStringAnsi(new IntPtr(entry->value)));
 
-                return dict;
+                    return dict;
+                }
             }
         }
 
@@ -64,21 +68,24 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
         {
             if (_formatContext != null)
             {
-                if (_formatContext->pb != null && _formatContext->pb->buffer != null)
-                    av_freep(&_formatContext->pb->buffer);
-
-                if (_formatContext->pb != null)
+                lock (FFmpegDecoder.SyncObject)
                 {
-                    var handle = GCHandle.FromIntPtr(new IntPtr(_formatContext->pb->opaque));
+                    if (_formatContext->pb != null && _formatContext->pb->buffer != null)
+                        av_freep(&_formatContext->pb->buffer);
 
-                    ((Stream)handle.Target).Dispose();
-                    handle.Free();
+                    if (_formatContext->pb != null)
+                    {
+                        var handle = GCHandle.FromIntPtr(new IntPtr(_formatContext->pb->opaque));
 
-                    avio_context_free(&_formatContext->pb);
+                        ((Stream) handle.Target).Dispose();
+                        handle.Free();
+
+                        avio_context_free(&_formatContext->pb);
+                    }
+
+                    fixed (AVFormatContext** formatPtr = &_formatContext)
+                        avformat_close_input(formatPtr);
                 }
-
-                fixed (AVFormatContext** formatPtr = &_formatContext)
-                    avformat_close_input(formatPtr);
             }
         }
     }
