@@ -16,4 +16,10 @@
     <ProjectReference Include="..\ProjectCeilidh.Ceilidh.Standard\ProjectCeilidh.Ceilidh.Standard.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="BrownianNoise.flac">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
