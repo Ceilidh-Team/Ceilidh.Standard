@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 echo Installing FFmpeg...
 sudo add-apt-repository ppa:mc3man/trusty-media
