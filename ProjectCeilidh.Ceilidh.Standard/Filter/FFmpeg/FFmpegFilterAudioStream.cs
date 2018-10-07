@@ -122,7 +122,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter.FFmpeg
                     if (readLen == 0) return 0;
 
                     _frame->sample_rate = _baseAudioStream.Format.SampleRate;
-                    _frame->format = (int) _baseAudioStream.Format.DataFormat.GetSampleFormat();
+                    _frame->format = (int)_baseAudioStream.Format.DataFormat.GetSampleFormat();
                     _frame->channel_layout =
                         unchecked((ulong) av_get_default_channel_layout(_baseAudioStream.Format.Channels));
                     _frame->pts = _samplePosition;

@@ -472,3 +472,4 @@ ASALocalRun/
 **/*.dll
 !ProjectCeilidh.Ceilidh.Standard/Decoder/FFmpeg/lib/*.dll
 !ProjectCeilidh.Ceilidh.Standard/Tools/lib/*.dll
+!ProjectCeilidh.Ceilidh.Standard/Output/PortAudio/lib/*.dll

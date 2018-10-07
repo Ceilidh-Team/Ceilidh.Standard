@@ -15,6 +15,7 @@
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <None Update="Decoder\FFmpeg\lib\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
     <None Update="Tools\lib\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+    <None Update="Output\PortAudio\lib\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
