@@ -57,6 +57,7 @@ namespace ProjectCeilidh.Ceilidh.ConsoleShell
             var ceilidhContext = new CobbleContext();
             foreach (var register in impl)
                 register.RegisterUnits(ceilidhContext);
+            ceilidhContext.AddManaged<ConsoleOutputConsumer>();
 
             ceilidhContext.ExecuteAsync().Wait();
 

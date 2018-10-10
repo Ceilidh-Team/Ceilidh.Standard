@@ -69,7 +69,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
                 var len = _baseAudioStream.Read(buffer, offset, count);
                 _ebuR128State.AddFrames(buffer, offset, len);
                 _currentGain = new Decibel(Math.Min(MAX_DB, _currentGain.Value * ALPHA + (1 - ALPHA) * (_target.Value - _ebuR128State.GetLoudness())));
-                Console.WriteLine("Current Gain: {0} dB", _currentGain.Value);
+                // Console.WriteLine("Current Gain: {0} dB", _currentGain.Value);
 
                 _transformFunc(buffer, offset, len, _currentGain.GetAmplitudeRatio());
 

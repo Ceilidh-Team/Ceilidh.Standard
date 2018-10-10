@@ -1,7 +1,7 @@
 using System;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
-using ProjectCeilidh.Ceilidh.Standard.Output.PortAudio.Bindings;
 using ProjectCeilidh.Cobble;
+using ProjectCeilidh.PortAudio;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
 {
@@ -11,15 +11,8 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
         {
             try
             {
-                using (PortAudioContext.EnterContext())
-                {
-                    var apiCount = Bindings.PortAudio.ApiCount;
-                    for (var i = 0; i < apiCount; i++)
-                    {
-                        var hostApiInfo = Bindings.PortAudio.GetHostApiInfo(i);
-                        context.AddUnmanaged(new PortAudioOutputController(hostApiInfo.Type));
-                    }
-                }
+                foreach (var api in PortAudioHostApi.SupportedHostApis)
+                    context.AddUnmanaged(new PortAudioOutputController(api));
             }
             catch (DllNotFoundException)
             {

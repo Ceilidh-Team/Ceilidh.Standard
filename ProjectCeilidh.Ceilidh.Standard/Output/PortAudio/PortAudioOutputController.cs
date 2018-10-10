@@ -1,75 +1,140 @@
+using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using ProjectCeilidh.Ceilidh.Standard.Debug;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
-using ProjectCeilidh.Ceilidh.Standard.Output.PortAudio.Bindings;
+using ProjectCeilidh.PortAudio;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
 {
-    internal class PortAudioOutputController : IOutputController
+    internal class PortAudioOutputController : IOutputController, IDisposable
     {
-        private readonly int _apiIndex;
-        private readonly int _defaultDeviceIndex;
+        public string ApiName { get; }
 
-        public string ApiName
+        private readonly PortAudioHostApi _api;
+        private readonly IReadOnlyCollection<PortAudioDevice> _outputDevices;
+        public PortAudioOutputController(PortAudioHostApi api)
         {
-            get;
-        }
+            _api = api;
+            ApiName = $"{Regex.Replace(api.Name, "^Windows ", "")} (PortAudio)";
 
-        public PortAudioOutputController(PaHostApiTypeId apiType)
-        {
-            _apiIndex = Bindings.PortAudio.HostTypeIdToIndex(apiType);
-            ref var info = ref Bindings.PortAudio.GetHostApiInfo(_apiIndex);
+            var devList = new List<PortAudioDevice>();
+            foreach (var device in api.Devices)
+            {
+                if (device.MaxOutputChannels <= 0)
+                {
+                    device.Dispose();
+                    continue;
+                }
 
-            _defaultDeviceIndex = info.DefaultOutputDevice;
-            ApiName = $"{info.Name} (PortAudio)";
+                devList.Add(device);
+            }
+
+            _outputDevices = devList;
         }
 
         public IEnumerable<OutputDevice> GetOutputDevices()
         {
-            using (PortAudioContext.EnterContext())
+            PortAudioDevice def = default;
+            try
             {
-                var apiInfo = Bindings.PortAudio.GetHostApiInfo(_apiIndex);
-                for (var i = 0; i < apiInfo.DeviceCount; i++)
-                {
-                    var index = Bindings.PortAudio.HostApiDeviceIndexToDeviceIndex(_apiIndex, i);
-                    var info = Bindings.PortAudio.GetDeviceInfo(index);
-                    if (info.MaxOutputChannels > 0)
-                        yield return new PortAudioOutputDevice(this, index == _defaultDeviceIndex, index);
-                }
+                def = _api.DefaultOutputDevice;
             }
+            catch (PortAudioException)
+            {
+                //_debug.WriteLine($"Default output device for audio API \"{ApiName}\" does not exist.", DebugMessageLevel.Warning);
+            }
+
+            foreach (var device in _outputDevices)
+                yield return new PortAudioOutputDevice(this, ReferenceEquals(def, device), device);
+        }
+
+        public void Dispose()
+        {
+            foreach (var device in _outputDevices)
+                device.Dispose();
+
+            _api.Dispose();
         }
 
         private class PortAudioOutputDevice : OutputDevice
         {
-            private readonly int _deviceIndex;
+            public override string Name { get;}
 
-            public override string Name
-            {
-                get;
-            }
+            public override IOutputController Controller { get; }
 
-            public override IOutputController Controller
-            {
-                get;
-            }
+            public override bool IsDefault { get; }
 
-            public override bool IsDefault
-            {
-                get;
-            }
+            private readonly PortAudioDevice _dev;
 
-            public PortAudioOutputDevice(IOutputController controller, bool isDefault, int deviceIndex)
+            public PortAudioOutputDevice(IOutputController controller, bool isDefault, PortAudioDevice device)
             {
+                Name = device.Name;
                 Controller = controller;
-                ref var deviceInfo = ref Bindings.PortAudio.GetDeviceInfo(deviceIndex);
-                Name = deviceInfo.Name;
                 IsDefault = isDefault;
-                _deviceIndex = deviceIndex;
+                _dev = device;
             }
 
-            public override PlaybackHandle Init(AudioStream stream)
+            public override PlaybackHandle Init(AudioStream stream) => new PortAudioPlaybackHandle(stream, _dev);
+        }
+
+        private class PortAudioPlaybackHandle : PlaybackHandle
+        {
+            public override AudioStream BaseStream { get; }
+
+            private volatile bool _isSeeking;
+            private readonly PortAudioDevicePump _pump;
+
+            public PortAudioPlaybackHandle(AudioStream baseStream, PortAudioDevice dev)
             {
-                return new PaStream(stream, _deviceIndex);
+                BaseStream = baseStream;
+
+                PortAudioSampleFormat.PortAudioNumberFormat numberFormat;
+                switch (baseStream.Format.DataFormat.NumberFormat)
+                {
+                    case NumberFormat.FloatingPoint:
+                        numberFormat = PortAudioSampleFormat.PortAudioNumberFormat.FloatingPoint;
+                        break;
+                    case NumberFormat.Signed:
+                        numberFormat = PortAudioSampleFormat.PortAudioNumberFormat.Signed;
+                        break;
+                    case NumberFormat.Unsigned:
+                        numberFormat = PortAudioSampleFormat.PortAudioNumberFormat.Unsigned;
+                        break;
+                    default: throw new ArgumentException();
+                }
+
+                _pump = new PortAudioDevicePump(dev, baseStream.Format.Channels,
+                    new PortAudioSampleFormat(numberFormat, baseStream.Format.DataFormat.BytesPerSample),
+                    dev.DefaultLowOutputLatency, baseStream.Format.SampleRate, DataCallback);
+
+                _pump.StreamFinished += PumpOnStreamFinished;
             }
+
+            private void PumpOnStreamFinished(object sender, EventArgs e)
+            {
+                if (!_isSeeking) PlaybackEnd?.Invoke(this, EventArgs.Empty);
+            }
+
+            private int DataCallback(byte[] buffer, int offset, int count) => BaseStream.Read(buffer, offset, count);
+
+            public override void Start() => _pump.Start();
+
+            public override void Seek(TimeSpan position)
+            {
+                _isSeeking = true;
+                _pump.Abort();
+                _pump.ClearBuffers();
+                BaseStream.Seek(position);
+                _pump.RestartAfterClear();
+                _isSeeking = false;
+            }
+
+            public override void Stop() => _pump.Stop();
+
+            public override void Dispose() => _pump.Dispose();
+
+            public override event PlaybackEndEventHandler PlaybackEnd;
         }
     }
 }
