@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using ProjectCeilidh.Ceilidh.Standard.Debug;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 using ProjectCeilidh.PortAudio;
 

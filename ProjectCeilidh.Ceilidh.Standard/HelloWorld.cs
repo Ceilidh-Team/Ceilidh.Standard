@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Ceilidh.Standard.Config;
-using ProjectCeilidh.Ceilidh.Standard.Debug;
+using ProjectCeilidh.Ceilidh.Standard.DebugOutput;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 using ProjectCeilidh.Ceilidh.Standard.Library;
 using ProjectCeilidh.Ceilidh.Standard.Localization;

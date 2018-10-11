@@ -1,5 +1,5 @@
 ﻿using System;
-using ProjectCeilidh.Ceilidh.Standard.Debug;
+using ProjectCeilidh.Ceilidh.Standard.DebugOutput;
 
 namespace ProjectCeilidh.Ceilidh.ConsoleShell
 {
