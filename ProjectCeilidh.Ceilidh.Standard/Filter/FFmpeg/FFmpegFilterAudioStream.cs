@@ -98,7 +98,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter.FFmpeg
             {
                 var readLen = Math.Min(count, _extraData.Length - _extraPtr);
 
-                fixed (byte* bufPtr = &buffer[_extraPtr])
+                fixed (byte* bufPtr = &buffer[offset])
                 fixed (byte* oldPtr = &_extraData[_extraPtr])
                     Buffer.MemoryCopy(oldPtr, bufPtr, count, readLen);
 
@@ -111,7 +111,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter.FFmpeg
 
             lock (FFmpegDecoder.SyncObject)
             {
-
                 int recieveError;
                 while ((recieveError = av_buffersink_get_frame(_abuffersinkContext, _frame)) == -EAgain)
                 {

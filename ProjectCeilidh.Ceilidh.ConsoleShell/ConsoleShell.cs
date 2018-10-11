@@ -44,22 +44,25 @@ namespace ProjectCeilidh.Ceilidh.ConsoleShell
                 return 0;
             }
 
-            var loadContext = new CobbleContext();
+            using (var loadContext = new CobbleContext())
+            {
+                loadContext.AddUnmanaged(startOptions);
 
-            loadContext.AddUnmanaged(startOptions);
+                foreach (var unit in typeof(IUnitLoader).Assembly.GetExportedTypes()
+                    .Where(x => x != typeof(IUnitLoader) && typeof(IUnitLoader).IsAssignableFrom(x)))
+                    loadContext.AddManaged(unit);
+                loadContext.ExecuteAsync().Wait();
+                if (!loadContext.TryGetImplementations<IUnitLoader>(out var impl)) return 0;
 
-            foreach (var unit in typeof(IUnitLoader).Assembly.GetExportedTypes()
-                .Where(x => x != typeof(IUnitLoader) && typeof(IUnitLoader).IsAssignableFrom(x)))
-                loadContext.AddManaged(unit);
-            loadContext.ExecuteAsync().Wait();
-            if (!loadContext.TryGetImplementations<IUnitLoader>(out var impl)) return 0;
+                using (var ceilidhContext = new CobbleContext())
+                {
+                    foreach (var register in impl)
+                        register.RegisterUnits(ceilidhContext);
+                    ceilidhContext.AddManaged<ConsoleOutputConsumer>();
 
-            var ceilidhContext = new CobbleContext();
-            foreach (var register in impl)
-                register.RegisterUnits(ceilidhContext);
-            ceilidhContext.AddManaged<ConsoleOutputConsumer>();
-
-            ceilidhContext.ExecuteAsync().Wait();
+                    ceilidhContext.ExecuteAsync().Wait();
+                }
+            }
 
             return 0;
         }

@@ -32,10 +32,13 @@ namespace ProjectCeilidh.Ceilidh.Standard.Filter
 
             var ratio = db.GetAmplitudeRatio();
 
-            return new FFmpegFilterAudioStream(stream, stream.Format, new FilterConfiguration("volume", new Dictionary<string, string>
-            {
-                ["volume"] = ratio.ToString(CultureInfo.InvariantCulture)
-            }));
+            return new FFmpegFilterAudioStream(stream,
+                new AudioFormat(stream.Format.SampleRate, stream.Format.Channels,
+                    new AudioDataFormat(NumberFormat.FloatingPoint, !BitConverter.IsLittleEndian, 4)),
+                new FilterConfiguration("volume", new Dictionary<string, string>
+                {
+                    ["volume"] = ratio.ToString(CultureInfo.InvariantCulture)
+                }));
         }
 
         
