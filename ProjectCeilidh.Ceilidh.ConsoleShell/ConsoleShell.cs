@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Mono.Options;
 using ProjectCeilidh.Ceilidh.Standard;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
@@ -10,7 +11,7 @@ namespace ProjectCeilidh.Ceilidh.ConsoleShell
 {
     public static class ConsoleShell
     {
-        private static int Main(string[] args)
+        private static async Task<int> Main(string[] args)
         {
             var startOptions = new CeilidhStartOptions();
 
@@ -51,7 +52,9 @@ namespace ProjectCeilidh.Ceilidh.ConsoleShell
                 foreach (var unit in typeof(IUnitLoader).Assembly.GetExportedTypes()
                     .Where(x => x != typeof(IUnitLoader) && typeof(IUnitLoader).IsAssignableFrom(x)))
                     loadContext.AddManaged(unit);
-                loadContext.ExecuteAsync().Wait();
+
+                await loadContext.ExecuteAsync();
+
                 if (!loadContext.TryGetImplementations<IUnitLoader>(out var impl)) return 0;
 
                 using (var ceilidhContext = new CobbleContext())
@@ -60,7 +63,7 @@ namespace ProjectCeilidh.Ceilidh.ConsoleShell
                         register.RegisterUnits(ceilidhContext);
                     ceilidhContext.AddManaged<ConsoleOutputConsumer>();
 
-                    ceilidhContext.ExecuteAsync().Wait();
+                    await ceilidhContext.ExecuteAsync();
                 }
             }
 
