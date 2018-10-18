@@ -9,13 +9,13 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder
         public abstract long TotalSamples { get; }
         public TimeSpan Duration => TimeSpan.FromSeconds(TotalSamples / (double) Format.SampleRate);
 
-        public AudioData ParentData { get; }
+        public IAudioData ParentData { get; }
 
         public override long Length => TotalSamples * Format.DataFormat.BytesPerSample * Format.Channels;
         public sealed override bool CanWrite => false;
         public sealed override bool CanRead => true;
 
-        public AudioStream(AudioData parentData)
+        public AudioStream(IAudioData parentData)
         {
             ParentData = parentData;
         }

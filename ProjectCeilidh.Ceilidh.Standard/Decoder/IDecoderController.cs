@@ -5,6 +5,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder
 {
     public interface IDecoderController : ILateInject<IDecoder>
     {
-        bool TryDecode(Source source, out AudioData audioData);
+        bool TryDecode(ISource source, out IAudioData audioData);
     }
 }

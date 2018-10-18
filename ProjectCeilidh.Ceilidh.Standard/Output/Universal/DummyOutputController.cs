@@ -22,16 +22,16 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Universal
             _localization = localization;
         }
 
-        public IEnumerable<OutputDevice> GetOutputDevices()
+        public IEnumerable<IOutputDevice> GetOutputDevices()
         {
             yield return new DummyOutputDevice(this, _localization);
         }
 
-        private class DummyOutputDevice : OutputDevice
+        private class DummyOutputDevice : IOutputDevice
         {
-            public override string Name { get; }
-            public override IOutputController Controller { get; }
-            public override bool IsDefault => true;
+            public string Name { get; }
+            public IOutputController Controller { get; }
+            public bool IsDefault => true;
 
             public DummyOutputDevice(IOutputController controller, ILocalizationController localization)
             {
@@ -39,44 +39,44 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.Universal
                 Controller = controller;
             }
 
-            public override PlaybackHandle Init(AudioStream stream)
+            public IPlaybackHandle Init(AudioStream stream)
             {
                 return new DummyPlaybackHandle(stream);
             }
 
-            public override void Dispose() { }
+            public void Dispose() { }
         }
 
-        private class DummyPlaybackHandle : PlaybackHandle
+        private class DummyPlaybackHandle : IPlaybackHandle
         {
-            public override AudioStream BaseStream { get; }
+            public AudioStream BaseStream { get; }
 
             public DummyPlaybackHandle(AudioStream baseStream)
             {
                 BaseStream = baseStream;
             }
             
-            public override void Start()
+            public void Start()
             {
                 throw new NotImplementedException();
             }
 
-            public override void Seek(TimeSpan position)
+            public void Seek(TimeSpan position)
             {
                 throw new NotImplementedException();
             }
 
-            public override void Stop()
+            public void Stop()
             {
                 throw new NotImplementedException();
             }
 
-            public override void Dispose()
+            public void Dispose()
             {
                 BaseStream.Dispose();
             }
 
-            public override event PlaybackEndEventHandler PlaybackEnd;
+            public event PlaybackEndEventHandler PlaybackEnd;
         }
     }
 }

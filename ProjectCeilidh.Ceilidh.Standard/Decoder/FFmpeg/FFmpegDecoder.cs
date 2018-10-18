@@ -15,7 +15,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
         private static readonly avio_alloc_context_read_packet ReadDelegate = ReadImpl;
         private static readonly avio_alloc_context_seek SeekDelegate = SeekImpl;
 
-        public bool TryDecode(Stream source, out AudioData audioData)
+        public bool TryDecode(Stream source, out IAudioData audioData)
         {
             lock (SyncObject)
             {

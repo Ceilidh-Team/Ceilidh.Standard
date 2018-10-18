@@ -32,7 +32,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
             _outputDevices = devList;
         }
 
-        public IEnumerable<OutputDevice> GetOutputDevices()
+        public IEnumerable<IOutputDevice> GetOutputDevices()
         {
             PortAudioDevice def = default;
             try
@@ -56,13 +56,13 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
             _api.Dispose();
         }
 
-        private class PortAudioOutputDevice : OutputDevice
+        private class PortAudioOutputDevice : IOutputDevice
         {
-            public override string Name { get;}
+            public string Name { get;}
 
-            public override IOutputController Controller { get; }
+            public IOutputController Controller { get; }
 
-            public override bool IsDefault { get; }
+            public bool IsDefault { get; }
 
             private readonly PortAudioDevice _dev;
 
@@ -74,12 +74,14 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
                 _dev = device;
             }
 
-            public override PlaybackHandle Init(AudioStream stream) => new PortAudioPlaybackHandle(stream, _dev);
+            public IPlaybackHandle Init(AudioStream stream) => new PortAudioPlaybackHandle(stream, _dev);
+
+            public void Dispose() { }
         }
 
-        private class PortAudioPlaybackHandle : PlaybackHandle
+        private class PortAudioPlaybackHandle : IPlaybackHandle
         {
-            public override AudioStream BaseStream { get; }
+            public AudioStream BaseStream { get; }
 
             private volatile bool _isSeeking;
             private readonly PortAudioDevicePump _pump;
@@ -117,9 +119,9 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
 
             private int DataCallback(byte[] buffer, int offset, int count) => BaseStream.Read(buffer, offset, count);
 
-            public override void Start() => _pump.Start();
+            public void Start() => _pump.Start();
 
-            public override void Seek(TimeSpan position)
+            public void Seek(TimeSpan position)
             {
                 _isSeeking = true;
                 _pump.Abort();
@@ -129,11 +131,11 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
                 _isSeeking = false;
             }
 
-            public override void Stop() => _pump.Stop();
+            public void Stop() => _pump.Stop();
 
-            public override void Dispose() => _pump.Dispose();
+            public void Dispose() => _pump.Dispose();
 
-            public override event PlaybackEndEventHandler PlaybackEnd;
+            public event PlaybackEndEventHandler PlaybackEnd;
         }
     }
 }

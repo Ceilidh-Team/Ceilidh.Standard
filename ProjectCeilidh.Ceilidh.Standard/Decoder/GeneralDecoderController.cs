@@ -16,7 +16,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder
             _decoders = new ConcurrentBag<IDecoder>(decoders);
         }
 
-        public bool TryDecode(Source source, out AudioData audioData)
+        public bool TryDecode(ISource source, out IAudioData audioData)
         {
             foreach (var decoder in _decoders)
             {

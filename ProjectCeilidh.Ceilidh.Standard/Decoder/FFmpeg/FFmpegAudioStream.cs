@@ -27,7 +27,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
         private readonly AVFormatContext* _formatContext;
         private readonly AVStream* _stream;
 
-        public FFmpegAudioStream(AudioData audioData, AVFormatContext* formatContext, AVStream* stream) : base(audioData)
+        public FFmpegAudioStream(IAudioData audioData, AVFormatContext* formatContext, AVStream* stream) : base(audioData)
         {
             lock (FFmpegDecoder.SyncObject)
             {

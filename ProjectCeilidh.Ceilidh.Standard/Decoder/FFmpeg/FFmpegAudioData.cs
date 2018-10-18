@@ -7,9 +7,9 @@ using static FFmpeg.AutoGen.ffmpeg;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
 {
-    internal unsafe class FFmpegAudioData : AudioData
+    internal unsafe class FFmpegAudioData : IAudioData
     {
-        public override IReadOnlyDictionary<string, string> Metadata
+        public IReadOnlyDictionary<string, string> Metadata
         {
             get
             {
@@ -31,8 +31,8 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
             }
         }
 
-        public override int StreamCount { get; }
-        public override int SelectedStream => _selectedStream;
+        public int StreamCount { get; }
+        public int SelectedStream => _selectedStream;
 
         private int _selectedStream = -1;
         private AVFormatContext* _formatContext;
@@ -53,7 +53,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
             Array.Copy(tmp, _streams, j);
         }
 
-        public override bool TrySelectStream(int streamIndex)
+        public bool TrySelectStream(int streamIndex)
         {
             if (streamIndex < 0 || streamIndex >= _streams.Length)
                 return false;
@@ -62,9 +62,9 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
             return true;
         }
 
-        public override AudioStream GetAudioStream() => new FFmpegAudioStream(this, _formatContext, _streams[SelectedStream]);
+        public AudioStream GetAudioStream() => new FFmpegAudioStream(this, _formatContext, _streams[SelectedStream]);
 
-        public override void Dispose()
+        public void Dispose()
         {
             if (_formatContext != null)
             {

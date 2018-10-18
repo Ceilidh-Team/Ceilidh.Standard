@@ -6,6 +6,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output
     {
         string ApiName { get; }
 
-        IEnumerable<OutputDevice> GetOutputDevices();
+        IEnumerable<IOutputDevice> GetOutputDevices();
     }
 }

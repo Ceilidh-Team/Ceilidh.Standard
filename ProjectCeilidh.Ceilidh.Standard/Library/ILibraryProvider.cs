@@ -15,7 +15,7 @@
         /// <returns>True if the returned source is valid, false otherwise.</returns>
         /// <param name="uri">The URI to get a source for.</param>
         /// <param name="source">A source used for accessing the URI data.</param>
-        bool TryGetSource(string uri, out Source source);
+        bool TryGetSource(string uri, out ISource source);
 
         /// <summary>
         /// Attempt to get a collection following changes and content in the given URI.
