@@ -30,7 +30,7 @@ cd ~/ffmpeg_sources
 wget http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 tar jxf ffmpeg-snapshot.tar.bz2
 cd ffmpeg
-./configure --enable-shared
+./configure --enable-shared --disable-protocols --disable-programs --disable-encoders
 make -s -j
 sudo make install
 hash -r
