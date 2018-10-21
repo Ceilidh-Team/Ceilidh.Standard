@@ -119,47 +119,16 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
 
                         if (av_sample_fmt_is_planar((AVSampleFormat) _avFrame->format) != 0 && _avFrame->channels > 1)
                         {
-                            ulong mask;
                             switch (bps)
                             {
                                 case 1:
-                                    mask = 0xFFL;
-                                    break;
+                                    return ReadPlanarByte(buffer, offset, count);
                                 case 2:
-                                    mask = 0xFFFFL;
-                                    break;
+                                    return ReadPlanarShort(buffer, offset, count);
                                 case 4:
-                                    mask = 0xFFFFFFFFL;
-                                    break;
-                                case 8:
-                                    mask = 0xFFFFFFFFFFFFFFFFL;
-                                    break;
-                                default: throw new ArgumentOutOfRangeException();
-                            }
-
-                            var tmpBuf = new byte[_avFrame->nb_samples * bps * _avFrame->channels];
-                            fixed (byte* tmpPtr = tmpBuf)
-                            {
-                                for (var i = 0; i < _avFrame->channels; i++)
-                                for (var j = 0; j < _avFrame->nb_samples * bps; j += bps)
-                                    *(ulong*) (tmpPtr + i * bps + j * _avFrame->channels) |=
-                                        mask & *(ulong*) (_avFrame->extended_data[i] + j);
-
-                                fixed (byte* bufPtr = &buffer[offset])
-                                {
-                                    var readLen = Math.Min(tmpBuf.Length, count);
-                                    Buffer.MemoryCopy(tmpPtr, bufPtr, count, readLen);
-
-                                    if (readLen == count && readLen != tmpBuf.Length)
-                                    {
-                                        _extraPtr = 0;
-                                        fixed (byte* extraPtr = _extraData = new byte[tmpBuf.Length - readLen])
-                                            Buffer.MemoryCopy(tmpPtr + readLen, extraPtr, tmpBuf.Length - readLen,
-                                                tmpBuf.Length - readLen);
-                                    }
-
-                                    return readLen;
-                                }
+                                    return ReadPlanarInt(buffer, offset, count);
+                                default:
+                                    throw new NotSupportedException();
                             }
                         }
                         else
@@ -182,6 +151,90 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
                                 return readLen;
                             }
                         }
+                }
+            }
+        }
+
+        private int ReadPlanarByte(byte[] buffer, int offset, int count)
+        {
+            var extLen = _avFrame->nb_samples * sizeof(byte) * _avFrame->channels;
+
+            var tmpBuf = new byte[_avFrame->nb_samples * _avFrame->channels];
+            fixed (byte* tmpPtr = tmpBuf)
+            {
+                for (var i = 0; i < _avFrame->channels; i++)
+                for (var j = 0; j < _avFrame->nb_samples; j++)
+                    tmpPtr[i + j * _avFrame->channels] |= *(_avFrame->extended_data[i] + j * sizeof(byte));
+
+                fixed (byte* bufPtr = &buffer[offset])
+                {
+                    var readLen = Math.Min(tmpBuf.Length, count);
+                    Buffer.MemoryCopy(tmpPtr, bufPtr, count, readLen);
+
+                    if (readLen != count || readLen == tmpBuf.Length) return readLen;
+
+                    _extraPtr = 0;
+                    fixed (byte* extraPtr = _extraData = new byte[extLen - readLen])
+                        Buffer.MemoryCopy(tmpPtr + readLen, extraPtr, extLen - readLen,
+                            extLen - readLen);
+
+                    return readLen;
+                }
+            }
+        }
+
+        private int ReadPlanarShort(byte[] buffer, int offset, int count)
+        {
+            var extLen = _avFrame->nb_samples * sizeof(short) * _avFrame->channels;
+
+            var tmpBuf = new short[_avFrame->nb_samples * _avFrame->channels];
+            fixed (short* tmpPtr = tmpBuf)
+            {
+                for (var i = 0; i < _avFrame->channels; i++)
+                for (var j = 0; j < _avFrame->nb_samples; j++)
+                    tmpPtr[i + j * _avFrame->channels] |= *(short*)(_avFrame->extended_data[i] + j * sizeof(short));
+
+                fixed (byte* bufPtr = &buffer[offset])
+                {
+                    var readLen = Math.Min(tmpBuf.Length, count);
+                    Buffer.MemoryCopy(tmpPtr, bufPtr, count, readLen);
+
+                    if (readLen != count || readLen == tmpBuf.Length) return readLen;
+
+                    _extraPtr = 0;
+                    fixed (byte* extraPtr = _extraData = new byte[extLen - readLen])
+                        Buffer.MemoryCopy(tmpPtr + readLen, extraPtr, extLen - readLen,
+                            extLen - readLen);
+
+                    return readLen;
+                }
+            }
+        }
+
+        private int ReadPlanarInt(byte[] buffer, int offset, int count)
+        {
+            var extLen = _avFrame->nb_samples * sizeof(int) * _avFrame->channels;
+
+            var tmpBuf = new int[_avFrame->nb_samples * _avFrame->channels];
+            fixed (int* tmpPtr = tmpBuf)
+            {
+                for (var i = 0; i < _avFrame->channels; i++)
+                for (var j = 0; j < _avFrame->nb_samples; j++)
+                    tmpPtr[i + j * _avFrame->channels] |= *(int*)(_avFrame->extended_data[i] + j * sizeof(int));
+
+                fixed (byte* bufPtr = &buffer[offset])
+                {
+                    var readLen = Math.Min(extLen, count);
+                    Buffer.MemoryCopy(tmpPtr, bufPtr, count, readLen);
+
+                    if (readLen != count || readLen == extLen) return readLen;
+
+                    _extraPtr = 0;
+                    fixed (byte* extraPtr = _extraData = new byte[extLen - readLen])
+                        Buffer.MemoryCopy((byte*)tmpPtr + readLen, extraPtr, extLen - readLen,
+                            extLen - readLen);
+
+                    return readLen;
                 }
             }
         }
