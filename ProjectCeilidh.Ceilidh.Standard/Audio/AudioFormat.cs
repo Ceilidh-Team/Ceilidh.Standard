@@ -1,4 +1,4 @@
-﻿namespace ProjectCeilidh.Ceilidh.Standard.Decoder
+﻿namespace ProjectCeilidh.Ceilidh.Standard.Audio
 {
     /// <summary>
     /// Represents the parameters of an AudioStream.

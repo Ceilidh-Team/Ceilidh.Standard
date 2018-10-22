@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using ProjectCeilidh.Ceilidh.Standard.Audio;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 using ProjectCeilidh.Ceilidh.Standard.Filter;
 

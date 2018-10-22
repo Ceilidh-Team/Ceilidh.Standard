@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ProjectCeilidh.Ceilidh.Standard.Decoder
+namespace ProjectCeilidh.Ceilidh.Standard.Audio
 {
     public interface IAudioData : IDisposable
     {

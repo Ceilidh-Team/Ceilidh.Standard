@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
+using ProjectCeilidh.Ceilidh.Standard.Audio;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 using ProjectCeilidh.Ceilidh.Standard.Filter.FFmpeg;

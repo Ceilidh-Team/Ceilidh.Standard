@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace ProjectCeilidh.Ceilidh.Standard.Decoder
+namespace ProjectCeilidh.Ceilidh.Standard.Audio
 {
     public abstract class AudioStream : Stream
     {
@@ -23,7 +23,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder
         public abstract void Seek(TimeSpan timestamp);
 
         public sealed override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public sealed override void Flush() => throw new NotSupportedException();
+        public sealed override void Flush() { }
         public sealed override void SetLength(long value) => throw new NotSupportedException();
 
         public sealed override long Seek(long offset, SeekOrigin origin)

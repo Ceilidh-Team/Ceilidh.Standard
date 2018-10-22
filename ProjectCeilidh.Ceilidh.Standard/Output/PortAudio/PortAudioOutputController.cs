@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text.RegularExpressions;
+using ProjectCeilidh.Ceilidh.Standard.Audio;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 using ProjectCeilidh.PortAudio;
 
@@ -86,12 +86,10 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
 
             private volatile bool _isSeeking;
             private readonly PortAudioDevicePump _pump;
-            private readonly BufferedStream _realStream;
 
             public PortAudioPlaybackHandle(AudioStream baseStream, PortAudioDevice dev)
             {
-                BaseStream = baseStream;
-                _realStream = new BufferedStream(baseStream, baseStream.Format.SampleRate * baseStream.Format.BytesPerFrame);
+                BaseStream = new BufferedAudioStream(baseStream, baseStream.Format.SampleRate * baseStream.Format.BytesPerFrame);
 
                 PortAudioSampleFormat.PortAudioNumberFormat numberFormat;
                 switch (baseStream.Format.DataFormat.NumberFormat)
@@ -120,7 +118,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
                 if (!_isSeeking) PlaybackEnd?.Invoke(this, EventArgs.Empty);
             }
 
-            private int DataCallback(byte[] buffer, int offset, int count) => _realStream.Read(buffer, offset, count);
+            private int DataCallback(byte[] buffer, int offset, int count) => BaseStream.Read(buffer, offset, count);
 
             public void Start() => _pump.Start();
 
@@ -139,7 +137,6 @@ namespace ProjectCeilidh.Ceilidh.Standard.Output.PortAudio
             public void Dispose()
             {
                 _pump.Dispose();
-                _realStream.Dispose();
                 BaseStream.Dispose();
             }
 

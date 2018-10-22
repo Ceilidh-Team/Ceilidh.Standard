@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using ProjectCeilidh.Ceilidh.Standard.Audio;
 using ProjectCeilidh.Ceilidh.Standard.Decoder;
 using ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg;
 using Xunit;

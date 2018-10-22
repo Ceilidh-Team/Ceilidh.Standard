@@ -1,5 +1,6 @@
 ﻿using System;
 using FFmpeg.AutoGen;
+using ProjectCeilidh.Ceilidh.Standard.Audio;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
 {

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
+using ProjectCeilidh.Ceilidh.Standard.Audio;
 using static FFmpeg.AutoGen.ffmpeg;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg

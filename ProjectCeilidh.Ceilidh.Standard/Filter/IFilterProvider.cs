@@ -1,4 +1,5 @@
-﻿using ProjectCeilidh.Ceilidh.Standard.Decoder;
+﻿using ProjectCeilidh.Ceilidh.Standard.Audio;
+using ProjectCeilidh.Ceilidh.Standard.Decoder;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Filter
 {
