@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Mono.Options;
 using ProjectCeilidh.Ceilidh.Standard;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
@@ -10,7 +11,7 @@ namespace ProjectCeilidh.Ceilidh.ConsoleShell
 {
     public static class ConsoleShell
     {
-        private static int Main(string[] args)
+        private static async Task<int> Main(string[] args)
         {
             var startOptions = new CeilidhStartOptions();
 
@@ -44,21 +45,27 @@ namespace ProjectCeilidh.Ceilidh.ConsoleShell
                 return 0;
             }
 
-            var loadContext = new CobbleContext();
+            using (var loadContext = new CobbleContext())
+            {
+                loadContext.AddUnmanaged(startOptions);
 
-            loadContext.AddUnmanaged(startOptions);
+                foreach (var unit in typeof(IUnitLoader).Assembly.GetExportedTypes()
+                    .Where(x => x != typeof(IUnitLoader) && typeof(IUnitLoader).IsAssignableFrom(x)))
+                    loadContext.AddManaged(unit);
 
-            foreach (var unit in typeof(IUnitLoader).Assembly.GetExportedTypes()
-                .Where(x => x != typeof(IUnitLoader) && typeof(IUnitLoader).IsAssignableFrom(x)))
-                loadContext.AddManaged(unit);
-            loadContext.ExecuteAsync().Wait();
-            if (!loadContext.TryGetImplementations<IUnitLoader>(out var impl)) return 0;
+                await loadContext.ExecuteAsync();
 
-            var ceilidhContext = new CobbleContext();
-            foreach (var register in impl)
-                register.RegisterUnits(ceilidhContext);
+                if (!loadContext.TryGetImplementations<IUnitLoader>(out var impl)) return 0;
 
-            ceilidhContext.ExecuteAsync().Wait();
+                using (var ceilidhContext = new CobbleContext())
+                {
+                    foreach (var register in impl)
+                        register.RegisterUnits(ceilidhContext);
+                    ceilidhContext.AddManaged<ConsoleOutputConsumer>();
+
+                    await ceilidhContext.ExecuteAsync();
+                }
+            }
 
             return 0;
         }

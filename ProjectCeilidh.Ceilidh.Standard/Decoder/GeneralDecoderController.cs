@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using ProjectCeilidh.Ceilidh.Standard.Audio;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using ProjectCeilidh.Ceilidh.Standard.Library;
 
@@ -17,7 +17,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder
             _decoders = new ConcurrentBag<IDecoder>(decoders);
         }
 
-        public bool TryDecode(Source source, out AudioData audioData)
+        public bool TryDecode(ISource source, out IAudioData audioData)
         {
             foreach (var decoder in _decoders)
             {

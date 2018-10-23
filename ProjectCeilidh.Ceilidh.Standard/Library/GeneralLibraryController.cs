@@ -23,7 +23,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
             _providers.Add(unit);
         }
 
-        public bool TryGetSource(string uri, out Source source)
+        public bool TryGetSource(string uri, out ISource source)
         {
             source = default;
             var prov = _providers.FirstOrDefault(x => x.CanAccept(uri));

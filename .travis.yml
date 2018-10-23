@@ -5,6 +5,11 @@ dotnet: 2.1.401
 os:
   - linux
   - osx
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install ffmpeg libebur128 portaudio ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod 777 ./builddepends.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./builddepends.sh ; fi
 install:
   - dotnet restore
 script:

@@ -23,7 +23,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
             }
         }
 
-        public bool TryGetSource(string uri, out Source source)
+        public bool TryGetSource(string uri, out ISource source)
         {
             source = default;
             if (!Path.IsPathRooted(uri) || !File.Exists(uri)) return false;
@@ -41,13 +41,13 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
             return true;
         }
 
-        private class FileSystemSource : Source
+        private class FileSystemSource : ISource
         {
-            public override string Uri { get; }
+            public string Uri { get; }
 
             public FileSystemSource(string uri) => Uri = uri;
 
-            public override Stream GetStream() => File.OpenRead(Uri);
+            public Stream GetStream() => File.OpenRead(Uri);
         }
 
         private class FileSystemLibraryCollection : ILibraryCollection
@@ -56,16 +56,16 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
 
             public int Count => _files.Count;
 
-            private readonly ConcurrentDictionary<string, Source> _files;
+            private readonly ConcurrentDictionary<string, ISource> _files;
             private readonly FileSystemWatcher _watcher;
 
             public FileSystemLibraryCollection(string uri)
             {
                 Uri = uri;
 
-                _files = new ConcurrentDictionary<string, Source>(Directory
+                _files = new ConcurrentDictionary<string, ISource>(Directory
                     .EnumerateFiles(uri, "*", SearchOption.AllDirectories)
-                    .Select(x => new KeyValuePair<string, Source>(x, new FileSystemSource(x))));
+                    .Select(x => new KeyValuePair<string, ISource>(x, new FileSystemSource(x))));
                 _watcher = new FileSystemWatcher
                 {
                     Path = uri,
@@ -123,7 +123,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Library
                     CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newSrc));
             }
 
-            public IEnumerator<Source> GetEnumerator() => _files.Values.GetEnumerator();
+            public IEnumerator<ISource> GetEnumerator() => _files.Values.GetEnumerator();
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 

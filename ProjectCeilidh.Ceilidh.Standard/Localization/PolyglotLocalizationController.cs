@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
@@ -37,7 +36,7 @@ namespace ProjectCeilidh.Ceilidh.Standard.Localization
             }
             catch
             {
-                Debug.WriteLine($"Failed to load a culture for locale \"{y}\"");
+                System.Diagnostics.Debug.WriteLine($"Failed to load a culture for locale \"{y}\"");
                 return (null, x.Key);
             }
         }).Where(y => y.Culture != null)).ToDictionary(x => x.Culture, y => y.PluralGroup);

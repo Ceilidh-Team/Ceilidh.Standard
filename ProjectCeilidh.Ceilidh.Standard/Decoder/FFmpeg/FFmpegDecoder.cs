@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
+using ProjectCeilidh.Ceilidh.Standard.Audio;
 using ProjectCeilidh.Ceilidh.Standard.Cobble;
 using static FFmpeg.AutoGen.ffmpeg;
 
@@ -10,50 +11,55 @@ namespace ProjectCeilidh.Ceilidh.Standard.Decoder.FFmpeg
     [CobbleExport]
     public unsafe class FFmpegDecoder : IDecoder
     {
+        internal static readonly object SyncObject = new object();
+
         private static readonly avio_alloc_context_read_packet ReadDelegate = ReadImpl;
         private static readonly avio_alloc_context_seek SeekDelegate = SeekImpl;
 
-        public bool TryDecode(Stream source, out AudioData audioData)
+        public bool TryDecode(Stream source, out IAudioData audioData)
         {
-            audioData = default;
-
-            var ioContext = CreateIoContext(source, out var sourceHandle);
-            var formatContext = avformat_alloc_context();
-            formatContext->pb = ioContext;
-
-            if (avformat_open_input(&formatContext, "", null, null) != 0)
+            lock (SyncObject)
             {
-                source.Dispose();
-                sourceHandle.Free();
+                audioData = default;
 
-                if (formatContext == null) return false;
+                var ioContext = CreateIoContext(source, out var sourceHandle);
+                var formatContext = avformat_alloc_context();
+                formatContext->pb = ioContext;
 
-                av_freep(formatContext->pb->buffer);
-
-                avio_context_free(&formatContext->pb);
-                avformat_free_context(formatContext);
-
-                return false;
-            }
-
-            if (avformat_find_stream_info(formatContext, null) != 0)
-            {
-                source.Dispose();
-                sourceHandle.Free();
-
-                if (formatContext != null)
+                if (avformat_open_input(&formatContext, "", null, null) != 0)
                 {
+                    source.Dispose();
+                    sourceHandle.Free();
+
+                    if (formatContext == null) return false;
+
                     av_freep(formatContext->pb->buffer);
 
                     avio_context_free(&formatContext->pb);
-                    avformat_close_input(&formatContext);
+                    avformat_free_context(formatContext);
+
+                    return false;
                 }
 
-                return false;
-            }
+                if (avformat_find_stream_info(formatContext, null) != 0)
+                {
+                    source.Dispose();
+                    sourceHandle.Free();
 
-            audioData = new FFmpegAudioData(formatContext);
-            return true;
+                    if (formatContext != null)
+                    {
+                        av_freep(formatContext->pb->buffer);
+
+                        avio_context_free(&formatContext->pb);
+                        avformat_close_input(&formatContext);
+                    }
+
+                    return false;
+                }
+
+                audioData = new FFmpegAudioData(formatContext);
+                return true;
+            }
         }
 
         /// <summary>

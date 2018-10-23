@@ -8,10 +8,17 @@
 
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="4.0.0.4" />
-    <PackageReference Include="ProjectCeilidh.Cobble" Version="1.1.1" />
+    <PackageReference Include="ProjectCeilidh.Cobble" Version="1.2.1" />
+    <PackageReference Include="ProjectCeilidh.PortAudio" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <None Update="Decoder\FFmpeg\lib\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+    <None Update="Tools\lib\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+    <None Update="Output\PortAudio\lib\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Tools\lib\" />
   </ItemGroup>
 </Project>

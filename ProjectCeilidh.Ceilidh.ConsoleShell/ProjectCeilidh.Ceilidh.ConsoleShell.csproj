@@ -3,11 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Mono.Options" Version="5.3.0.1" />
-    <PackageReference Include="ProjectCeilidh.Cobble" Version="1.1.1" />
+    <PackageReference Include="ProjectCeilidh.Cobble" Version="1.2.1" />
   </ItemGroup>
 
   <ItemGroup>
