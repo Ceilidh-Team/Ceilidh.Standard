@@ -1,8 +1,10 @@
 using System;
 using System.IO;
+using ProjectCeilidh.Ceilidh.Standard.Cobble;
 
 namespace ProjectCeilidh.Ceilidh.Standard.Mount.FileSystem
 {
+    [CobbleExport]
     public class FileSystemMountDriver : IMountDriver
     {
         public bool CanAccept(Uri uri) => uri.Scheme == Uri.UriSchemeFile;
@@ -29,6 +31,16 @@ namespace ProjectCeilidh.Ceilidh.Standard.Mount.FileSystem
                 default:
                     return false;
             }
+        }
+
+        public bool TryWatchFolder(Uri uri, out IMountWatch watch)
+        {
+            watch = default;
+            
+            if (!Directory.Exists(uri.AbsolutePath)) return false;
+            
+            watch = new FileSystemMountWatch(uri);
+            return true;
         }
     }
 }
